@@ -9,7 +9,7 @@
 - [Testbeam Analysis](#testbeamanalysis)
 - [Miscellaneous](#Miscellaneous)
 
-## Lab Measurements {#labmeasurements}
+## Lab Measurements 
 ### Hardware Setup
 ![Alt text](images/setup.jpg)
 
