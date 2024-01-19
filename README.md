@@ -1,15 +1,15 @@
 # UZH CE65 Documentation
 
 ## Table of Contents
-- [Lab Measurements](#heading-1)
-  - [Hardware Setup](#subheading-2-1)
-  - [Data Acquisition](#subheading-2-2)
-  - [Analysis](#subheading-2-2)
-- [Post-analysis and Fitting Spectra](#heading-2)
-- [Testbeam Analysis](#heading-3)
-- [Miscellaneous](#heading-4)
+- [Lab Measurements](#labmeasurements)
+  - [Hardware Setup](#labmeasurements_hardwaresetup)
+  - [Data Acquisition](#labmeasurements_dataacquisition)
+  - [Analysis](#labmeasurements_analysis)
+- [Post-analysis and Fitting Spectra](#postanalysisandfittingspectra)
+- [Testbeam Analysis](#testbeamanalysis)
+- [Miscellaneous](#Miscellaneous)
 
-## Lab Measurements
+## Lab Measurements {#labmeasurements}
 ### Hardware Setup
 ![Alt text](images/setup.jpg)
 
@@ -58,6 +58,10 @@ After obtaining the histograms from the Fe-55 source scan in the `*_wave.root` f
 The output of `histo_1d_root_dev.py` is a .pdf file in a directory `~/CE65/ce65_daq_v2/analysis/plotting_scripts/CHIPNAME`.
 
 
+### Testbeam Analysis
+
+
+### Miscellaneous
 
 
 
