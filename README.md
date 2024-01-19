@@ -1,4 +1,4 @@
-UZH CE65 Documentation
+# UZH CE65 Documentation
 
 ## Table of Contents
 - [Lab Measurements](#heading-1)
