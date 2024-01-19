@@ -30,3 +30,10 @@ When choosing a CE65 chip (V1 or V2) for which data is to be taken it is helpful
  - The setup is now ready for data taking, which is described in the next section. 
 
 #### Data Acquisition
+
+Due to the ephemeral nature of FPGA programming, the firmware must be reloaded every time the FPGA board is power cycled. The can be done using the `program_fpga` command. Each firmware is specific to a CE65 version. By default the V2 firmware will be loaded. The source code is available here `link_this?`.
+
+Prior to programming the FPGA, verify that the voltage in Channel 1 (the one powering the board) hovers at around `~250 mV`. After the programming is complete, the voltage should increase to `~400 mV`.
+
+The data acquisition code is located in `~/CE65/ce65_daq`. It functions via a GUI that can be started by running `./ce65_daq` from within the relevant directory. The GUI is straightforward to use, but there are some caveats
+ - When specifying a file name, it is important to hit `Enter/Return` after one is done, else the changes will not take effect. We have been using the convention `testTree_CHIPNAME_PWELL_HV_TEMP_DATE`. For instance, for the STD225SQ chip at an HV_RESET = 8V, PWELL = 0V, at chiller setting of 20C, taken on the 19/12/2023, this would be `testTree_STD225SQ_0V_8V_20C_19122023`. It is important to follow the naming convention for compatibility and book-keeping, though the ordering of the fields does not matter. 
