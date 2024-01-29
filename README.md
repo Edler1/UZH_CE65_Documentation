@@ -64,6 +64,8 @@ The output of `histo_1d_root_dev.py` is a .pdf file in a directory `~/CE65/ce65_
 ### Miscellaneous
 
 
+paths = ~/CE65/ce_65_v2
+paths = ~/CE65/ce-65-daq-software-uzh-edits
 
 
 
