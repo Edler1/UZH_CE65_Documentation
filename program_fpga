@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+cd "/home/fcc-ce65-testsetup/CE65/apts-dpts-ce65-daq-software/tools"
+if [[ "$1" == "-v1" ]]; then
+    echo "Loading CE65 v1 bitfile..."
+    sleep 2 
+    mlr1-daq-program --fx3=/home/fcc-ce65-testsetup/CE65/apts-dpts-ce65-daq-software/tools/fx3.img --fpga=/home/fcc-ce65-testsetup/CE65/apts-dpts-ce65-daq-software/tools/0x107E6A10.bit
+elif [[ "$1" == "-v2" ]]; then
+    echo "Loading CE65 v2 bitfile..."
+    sleep 2 
+    mlr1-daq-program --fx3=/home/fcc-ce65-testsetup/CE65/apts-dpts-ce65-daq-software/tools/fx3.img --fpga=/home/fcc-ce65-testsetup/CE65/daq_board_ce65v2_10m_230828.bit
+else
+    echo "No command line option specified. Defaulting to CE65 v2 bitfile..."
+    sleep 2 
+    mlr1-daq-program --fx3=/home/fcc-ce65-testsetup/CE65/apts-dpts-ce65-daq-software/tools/fx3.img --fpga=/home/fcc-ce65-testsetup/CE65/daq_board_ce65v2_10m_230828.bit
+fi
+
+
+
