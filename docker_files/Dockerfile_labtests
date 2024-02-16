@@ -45,6 +45,18 @@ RUN mkdir -p ${CORRYPATH}/build && \
 # tqdm
 RUN pip3 install tqdm
 
+# libusb
+RUN apt-get install -y libusb-1.0-0-dev
+
+
+
+# Boost
+ENV BOOSTPATH=/opt/boost
+COPY debug_builds/boost_1_76_0 debug_builds/boost_1_76_0
+RUN cd debug_builds/boost_1_76_0 && \
+    ./bootstrap.sh --prefix=${BOOSTPATH} && \
+    ./b2 install --prefix=/opt/boost --with=all 
+ENV LD_LIBRARY_PATH=${BOOSTPATH}/lib:$LD_LIBRARY_PATH
 
 # apts-dpts-ce65-daq-software
 # This should be in the same directory as the ce65_daq will eventually be, thus
@@ -53,18 +65,14 @@ COPY debug_builds/apts-dpts-ce65-daq-software ${MLR1SOFTWARE}
 RUN cd ${MLR1SOFTWARE}/cpp && \
     make 
 
-# Boost
-ENV BOOSTPATH=/opt/boost
-RUN cd debug_builds/boost_1_76_0 && \
-    ./bootstrap.sh --prefix=${BOOSTPATH} && \
-    ./b2 install --prefix=/opt/boost --with=all 
-ENV LD_LIBRARY_PATH=${BOOSTPATH}/lib:$LD_LIBRARY_PATH
-
+# libjson
+RUN apt-get install -y libjsoncpp-dev
 
 
 # Default command for starting the container, executed after the ENTRYPOINT
 #ENV PATH "${CORRYPATH}/bin:${PATH}"
 #ENV LD_LIBRARY_PATH "${EUDAQ2PATH}/lib:${LD_LIBRARY_PATH}"
 #ENV PYTHONPATH "${EUDAQ2PATH}/lib:${PYTHONPATH}"
+ENV CE65DAQ=/local/lab_software/ce65_daq
 WORKDIR /local/
 CMD ["bash"]
