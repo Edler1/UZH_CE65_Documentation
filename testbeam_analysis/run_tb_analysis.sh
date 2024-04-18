@@ -16,15 +16,23 @@ momentum=4   #GeV
 #(optional, leave blank)
 run_number_beam=""
 run_number_noise=""
-number_of_events=500
-#number_of_events=-1
+#number_of_events=10000
+number_of_events=-1
 #number_of_events=9000 # only works for 9k events in GAP225SQ
 ## apparently not???
-seedthr="350"
-nbh="100"
-snr_seed="9"
-snr_neighbor="3"
-method="cluster"
+
+seedthr_alignment="350"
+nbh_alignment="100"
+snr_seed_alignment="9"
+snr_neighbor_alignment="3"
+
+seedthr_analysis="350"
+nbh_analysis="100"
+snr_seed_analysis="3"
+snr_neighbor_analysis="3"
+
+method_alignment="cluster"
+method_analysis="window"
 
 niter_prealign_tel=2
 niter_align_tel=6
@@ -33,8 +41,12 @@ niter_align_dut=4
 
 
 
-
-
+## Allow passing of params via command-line specified .txt file
+if [[ $# -eq 1 && -f "$1" ]]; then
+    source $1
+else 
+    echo "No params .txt file passed. Running with script defaults."
+fi
 
 
 ## Below we just define the associative array from "copy_tb_files.sh" to check that chip and pcb match... 
@@ -233,19 +245,19 @@ sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/$
 sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 #########################
@@ -273,20 +285,20 @@ sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/
 sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 
@@ -297,7 +309,7 @@ sed -i "s/^method=cluster.*$/method = ${method}/g" config/${chip}/align_dut_${te
 cp "config/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 # update firstly histogram name
-sed -i "s/analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root/${chip}\/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr}_nbh${nbh}_snr${snr}_${method}.root/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root/${chip}\/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update detectors_file(s) file name
 sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -315,19 +327,19 @@ sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/
 sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 
@@ -465,7 +477,7 @@ sed -i '/type = "ce65v2"/a\
 roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/DESY-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
 corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr}_nbh${nbh}_snr${snr}_${method}.root
+../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
 
 
 echo "-FINISHED EXECUTION-"
