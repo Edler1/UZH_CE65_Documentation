@@ -1,0 +1,35 @@
+##########
+# Params #
+##########
+
+#params for pcb08. should correspond very closely if not exactly to the params Ajit shared with me.
+
+# Maybe re-order some of these, they look awkward
+testbeam="DESY202311"
+chip="STD15SQ"
+pcb="pcb06"
+#HV=()
+HV="10"
+momentum=4   #GeV
+#(optional, leave blank)
+run_number_beam=""
+run_number_noise=""
+number_of_events=-1
+
+seedthr_alignment="900"
+nbh_alignment="200"
+snr_seed_alignment="9"
+snr_neighbor_alignment="1"
+
+seedthr_analysis="400"
+nbh_analysis="100"
+snr_seed_analysis="3"
+snr_neighbor_analysis="2"
+
+method_alignment="cluster"
+method_analysis="window"
+
+niter_prealign_tel=2
+niter_align_tel=6
+niter_prealign_dut=1
+niter_align_dut=4
