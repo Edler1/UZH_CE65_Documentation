@@ -5,10 +5,8 @@ set -e
 # Params #
 ##########
 
-# Maybe re-order some of these, they look awkward
 testbeam="SPS202404"
 chip="GAP225SQ"
-#chip="GAP15SQ"
 pcb="pcb07"
 #HV=()
 HV="10"
@@ -18,8 +16,6 @@ run_number_beam=""
 run_number_noise=""
 number_of_events=2000
 # number_of_events=-1
-#number_of_events=9000 # only works for 9k events in GAP225SQ
-## apparently not???
 
 seedthr_alignment="350"
 nbh_alignment="100"
@@ -34,10 +30,6 @@ snr_neighbor_analysis="3"
 method_alignment="cluster"
 method_analysis="window"
 
-# niter_prealign_tel=2
-# niter_align_tel=6
-# niter_prealign_dut=1
-# niter_align_dut=4
 
 niter_prealign_tel=1
 niter_align_tel=1
@@ -87,11 +79,6 @@ else
     exit
 fi
 
-#echo "${its3_utils_path}"
-
-
-#file_name = "../data/debug/ce65v2_pcb02_hv10_beam_run482100624_231128100629.raw"
-#sed "s/\(.*\)/\L\1/g"
 
 ## Find beam+noise files
 if [ ! -n "${run_number_beam}" ]; then
@@ -122,11 +109,6 @@ run_number_noise=`echo "${datafile_noise}" | sed "s/.*run\([0-9]*_[0-9]*\)\.raw/
 
 
 
-
-## We then copy over the necessary files 
-#prealign + align tel
-#prealign + align dut
-
 #########
 # MKDIR #
 #########
@@ -145,6 +127,9 @@ for dir in ${dirs[@]}; do
 done 
 
 testbeam_alphabetic=`echo "${testbeam}" | egrep -o "^[A-Z]+"`
+
+
+
 
 ## Now we copy over the files and use `sed` to edit them
 ## By convention the prototype for each of the copies will be in the parent directory of the class (e.g. masks/ref-plane0.txt)
@@ -348,14 +333,13 @@ sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/analy
 
 
 
-
 ############
 # Noisemap #
 ############
 
 ##VERIFY COMMANDS -> qa +  also output paths!
 
-echo "Starting DUMP"
+echo -e "\n\n\n\033[1;95mStarting DUMP\033[0m"
 ../eudaq/CE65V2Dump.py data/${chip}/${datafile_noise} -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise --qa 
 
 ../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
@@ -364,9 +348,9 @@ echo "Starting DUMP"
 # Prealignment-tel #
 ####################
 
-echo "################################################################################"
-echo "# execution : corry -c config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #"
-echo "################################################################################"
+echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
+echo -e "\033[1;95m# execution : corry -c config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m############################################################################\033[0m\n\n\n\033[0m"
 
 ## Idea now is to introduce the number of iters.
 # Start by defining necessary conf files. Geo files will be written out.
@@ -390,9 +374,9 @@ done
 # Alignment-tel #
 #################
 
-echo "################################################################################"
-echo "# execution : corry -c config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #"
-echo "################################################################################"
+echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
+echo -e "\033[1;95m# execution : corry -c config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
 i=1
 #config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 ## it starts from 1. Thus every config file should be subscripted? else we will have too many else conditions...
@@ -415,9 +399,9 @@ done
 # Prealignment-dut #
 ####################
 
-echo "################################################################################"
-echo "execution : corry -c config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
-echo "################################################################################"
+echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
+echo -e "\033[1;95m# execution : corry -c config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m############################################################################\033[0m\n\n\n"
 i=1
 while [ $i -le ${niter_prealign_dut} ]; do 
     cp config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
@@ -433,16 +417,14 @@ while [ $i -le ${niter_prealign_dut} ]; do
 done 
 
 ../corry/plot_analog_ce65v2.py -f output/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_prealign_dut}.root --noisy-freq 0.95
-##corry -c config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-##../corry/plot_analog_ce65v2.py -f output/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.root --noisy-freq 0.95
 
 #################
 # Alignment-dut #
 #################
 
-echo "################################################################################"
-echo "execution : corry -c config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
-echo "################################################################################"
+echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
+echo -e "\033[1;95m# execution : corry -c config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
 i=1
 while [ $i -le ${niter_align_dut} ]; do 
     cp config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
@@ -458,19 +440,14 @@ while [ $i -le ${niter_align_dut} ]; do
 done 
 
 ../corry/plot_analog_ce65v2.py -f output/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_dut}.root --noisy-freq 0.95
-#corry -c config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-#../corry/plot_analog_ce65v2.py -f output/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.root
 
 ############
 # Analysis #
 ############
-echo "################################################################################"
-echo "# corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf #"
-echo "################################################################################"
+echo -e "\n\n\n\033[1;95m############################################################\033[0m"
+echo -e "\033[1;95m# corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m############################################################\033[0m\n\n\n"
 
-### It is important to specify the roi in the analysis geometry file prior to analysis
-# sed -i '/type = "ce65v2"/a\
-# roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/DESY-${chip}_HV${HV}_aligned_dut.conf
 
 ## Below is only necessary since I implemented the niters hackily...
 sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_dut}.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -482,7 +459,7 @@ corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 ../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
 
 
-echo "-FINISHED EXECUTION-"
+echo -e "\n\n\n\033[1;95m-FINISHED EXECUTION-\033[0m\n\n\n"
 
 
 
