@@ -6,18 +6,18 @@ set -e
 ##########
 
 # Maybe re-order some of these, they look awkward
-testbeam="DESY202311"
-chip="STD15SQ"
+testbeam="SPS202404"
+chip="GAP225SQ"
 #chip="GAP15SQ"
-pcb="pcb06"
+pcb="pcb07"
 #HV=()
 HV="10"
-momentum=4   #GeV
+momentum=120   #GeV
 #(optional, leave blank)
 run_number_beam=""
 run_number_noise=""
-#number_of_events=10000
-number_of_events=-1
+number_of_events=2000
+# number_of_events=-1
 #number_of_events=9000 # only works for 9k events in GAP225SQ
 ## apparently not???
 
@@ -34,11 +34,15 @@ snr_neighbor_analysis="3"
 method_alignment="cluster"
 method_analysis="window"
 
-niter_prealign_tel=2
-niter_align_tel=6
-niter_prealign_dut=1
-niter_align_dut=4
+# niter_prealign_tel=2
+# niter_align_tel=6
+# niter_prealign_dut=1
+# niter_align_dut=4
 
+niter_prealign_tel=1
+niter_align_tel=1
+niter_prealign_dut=1
+niter_align_dut=1
 
 
 ## Allow passing of params via command-line specified .txt file
@@ -128,10 +132,10 @@ run_number_noise=`echo "${datafile_noise}" | sed "s/.*run\([0-9]*_[0-9]*\)\.raw/
 #########
 
 cd "${its3_utils_path}/${testbeam}"
-dirs=( config geometry masks qa output )
+dirs=( config geometry masks qa output data )
 for dir in ${dirs[@]}; do
     if [ ! -d "${dir}/${chip}" ]; then 
-        mkdir ${dir}/${chip}
+        mkdir -p ${dir}/${chip}
     fi
     if [ "${dir}" == "masks" ]; then 
         for i in {0..5}; do 
@@ -156,7 +160,7 @@ testbeam_alphabetic=`echo "${testbeam}" | egrep -o "^[A-Z]+"`
 cp "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" "geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo"
 
 # replace masks into chip subdir
-sed -i "s/masks/masks\/${chip}/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
+sed -i "s/DESY202311\/masks/${testbeam}\/masks\/${chip}/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
 # add hv to mask names
 sed -i "s/\(plane[0-5]\)/\1_HV${HV}/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
 
@@ -406,8 +410,6 @@ while [ $i -le ${niter_align_tel} ]; do
 done 
 ../corry/plot_analog_ce65v2.py -f output/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_tel}.root --noisy-freq 0.95
 
-#corry -c config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-#../corry/plot_analog_ce65v2.py -f output/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.root
 
 ####################
 # Prealignment-dut #
@@ -467,14 +469,14 @@ echo "# corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.
 echo "################################################################################"
 
 ### It is important to specify the roi in the analysis geometry file prior to analysis
-sed -i '/type = "ce65v2"/a\
-roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/DESY-${chip}_HV${HV}_aligned_dut.conf
+# sed -i '/type = "ce65v2"/a\
+# roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/DESY-${chip}_HV${HV}_aligned_dut.conf
 
 ## Below is only necessary since I implemented the niters hackily...
 sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_dut}.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 sed -i "s/detectors_file_updated = \(.*\)_aligned_dut_analysed.conf/detectors_file_updated = \1_aligned_dut_iter${niter_align_dut}_analysed.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 sed -i '/type = "ce65v2"/a\
-roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/DESY-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
+roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
 corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 ../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
