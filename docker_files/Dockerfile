@@ -18,6 +18,8 @@ RUN apt-get install -y libeigen3-dev python3-lxml clang-format-12
 RUN pip3 install --upgrade pip && \
     pip3 install numpy matplotlib scipy pandas
 
+# tqdm
+RUN pip3 install tqdm
 
 
 # EUDAQ2
