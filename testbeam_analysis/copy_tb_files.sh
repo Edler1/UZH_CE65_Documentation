@@ -58,7 +58,7 @@ for chip in ${_chips[@]}; do
     for hv in ${hvs[@]}; do
         
         if [ ! -d ${its3_utils_path}/${testbeam}/data/${chips["${chip}"]} ]; then 
-            mkdir ${its3_utils_path}/${testbeam}/data/${chips["${chip}"]}
+            mkdir -p ${its3_utils_path}/${testbeam}/data/${chips["${chip}"]}
         fi
         if [ "${testbeam}" = "DESY202311" ]; then
             sshpass -p "${password}" rsync -P --ignore-existing ${username}@lxplus.cern.ch:/eos/project/a/aliceits3/ITS3-WP3/Testbeams/2023-11_DESY/beam/ce65v2_${chip}_hv${hv}_beam_run* ${its3_utils_path}/${testbeam}/data/${chips["${chip}"]}/ 
