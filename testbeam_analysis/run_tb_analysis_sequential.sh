@@ -78,7 +78,7 @@ fi
 
 
 ## We start by checking for the ITS3utils dir
-its3_utils_path=`find .. -type d -name "ITS3utils"`
+its3_utils_path=`find . -not -iwholename '*.git*' -type d -name "ITS3utils"` 
 if [ -n "$its3_utils_path" ]; then
     its3_utils_path=`realpath $its3_utils_path`
 else 
