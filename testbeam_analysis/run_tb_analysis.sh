@@ -91,7 +91,7 @@ fi
 if [ ${run_number_beam} == "all" ]; then 
     mapfile -d '' datafile_beams < <(find ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_beam_run[0-9]*_[0-9]*.raw -print0)
 elif [ ! -n "${run_number_beam}" ]; then
-    datafile_noise=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_noise_run[0-9]*_[0-9]*.raw | head -1`
+    datafile_beams=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_noise_run[0-9]*_[0-9]*.raw | head -1`
 else
     datafile_beams=`find ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}.raw | head -1`
 fi
