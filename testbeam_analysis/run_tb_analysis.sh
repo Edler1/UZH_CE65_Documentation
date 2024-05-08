@@ -10,6 +10,8 @@ chip="GAP225SQ"
 pcb="pcb07"
 #HV=()
 HV="10"
+chillerTemp="" # Default "", for SPS 2024 TB. For DESY 2024 TB use "_t0"
+windowSize="" # Default "", for SPS 2024 TB. For DESY 2024 TB use "_winNxN" with N the size of the readout window
 momentum=120   #GeV
 #(optional, leave blank)
 run_number_beam=""
@@ -69,6 +71,29 @@ if [ "${1:0:3}" == "pcb" ]; then
 fi
 
 
+## Extract number of pixels to read in x and y
+pattern='_win([0-9]+)x([0-9]+)'
+if [[ $windowSize =~ $pattern ]]; then
+    # Extract the numbers into variables
+    nx="${BASH_REMATCH[1]}" # Extract the first captured group
+    ny="${BASH_REMATCH[2]}" # Extract the second captured group
+
+    echo "Using window size of ..."
+    echo "nx: $nx"
+    echo "ny: $ny"
+else
+    echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
+    nx=48
+    ny=24
+fi
+
+## Replacing window size in CE65RawEvent2StdEventConverter class and recompile
+sed -i "s/X_MX_SIZE = 64/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+sed -i "s/Y_MX_SIZE = 48/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+cd /opt/eudaq2/build/
+cmake ..
+make install
+cd -
 
 ## We start by checking for the ITS3utils dir
 its3_utils_path=`find .. -type d -name "ITS3utils"`
@@ -82,24 +107,24 @@ fi
 
 ## Find beam+noise files
 if [ ! -n "${run_number_beam}" ]; then
-    datafile_beam=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_beam_run[0-9]*_[0-9]*.raw | head -1`
+    datafile_beam=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run[0-9]*_[0-9]*.raw | head -1`
 else
-    datafile_beam=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}.raw | head -1`
+    datafile_beam=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}.raw | head -1`
 fi
 if [ ! -n "${datafile_beam}" ]; then
-    echo "Failed to find file(s) : \"${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_beam_run[0-9]*_[0-9]*.raw \". Have you ran \"copy_tb_files.sh\" already?"
+    echo "Failed to find file(s) : \"${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run[0-9]*_[0-9]*.raw \". Have you ran \"copy_tb_files.sh\" already?"
     exit
 fi
 datafile_beam=`echo "${datafile_beam}" | sed "s/.*\/\([a-zA-Z0-9_.]*$\)/\1/"`
 run_number_beam=`echo "${datafile_beam}" | sed "s/.*run\([0-9]*_[0-9]*\)\.raw/\1/g"`
 
 if [ ! -n "${run_number_noise}" ]; then
-    datafile_noise=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_noise_run[0-9]*_[0-9]*.raw | head -1`
+    datafile_noise=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_noise${windowSize}_run[0-9]*_[0-9]*.raw | head -1`
 else
-    datafile_noise=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_noise_run${run_number_noise}.raw | head -1`
+    datafile_noise=`ls -1S ${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_noise${windowSize}_run${run_number_noise}.raw | head -1`
 fi
 if [ ! -n "${datafile_noise}" ]; then
-    echo "Failed to find file(s) : \"${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}_noise_run[0-9]*_[0-9]*.raw \". Have you ran \"copy_tb_files.sh\" already?"
+    echo "Failed to find file(s) : \"${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_noise${windowSize}_run[0-9]*_[0-9]*.raw \". Have you ran \"copy_tb_files.sh\" already?"
     exit
 fi
 datafile_noise=`echo "${datafile_noise}" | sed "s/.*\/\([a-zA-Z0-9_.]*$\)/\1/"`
@@ -183,7 +208,7 @@ sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${c
 sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 #########################
 # Align-tel config file #
@@ -204,7 +229,7 @@ sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${c
 sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 # set momentum
@@ -231,7 +256,7 @@ sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${c
 sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
 sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -268,7 +293,7 @@ sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${c
 sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set momentum
 sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -310,7 +335,7 @@ sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${c
 sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}_beam_run${run_number_beam}\.raw/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set momentum
 sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -340,7 +365,7 @@ sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/analy
 ##VERIFY COMMANDS -> qa +  also output paths!
 
 echo -e "\n\n\n\033[1;95mStarting DUMP\033[0m"
-../eudaq/CE65V2Dump.py data/${chip}/${datafile_noise} -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise --qa 
+../eudaq/CE65V2Dump.py data/${chip}/${datafile_noise} -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise --qa --nx ${nx} --ny ${ny}
 
 ../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
 
