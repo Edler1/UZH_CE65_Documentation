@@ -96,8 +96,8 @@ else
 fi
 
 ## Replacing window size in CE65RawEvent2StdEventConverter class and recompile
-sed -i "s/X_MX_SIZE = 64/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
-sed -i "s/Y_MX_SIZE = 48/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+sed -i "s/X_MX_SIZE = 48/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+sed -i "s/Y_MX_SIZE = 24/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
 cd /opt/eudaq2/build/
 cmake ..
 make install
@@ -488,7 +488,7 @@ for datafile_beam in "${datafile_beams[@]}"; do
     sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_dut}.conf/g" config/${chipWithRunNumber}/analysis_${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}.conf
     sed -i "s/detectors_file_updated = \(.*\)_aligned_dut_analysed.conf/detectors_file_updated = \1_aligned_dut_iter${niter_align_dut}_analysed.conf/g" config/${chipWithRunNumber}/analysis_${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}.conf
     sed -i '/type = "ce65v2"/a\
-    roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chipWithRunNumber}/${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
+    roi = [[0,0],[0,$((ny-1))],[$((nx-1)) ,$((ny-1))],[$((nx-1)),0]]' geometry/${chipWithRunNumber}/${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
     corry -c config/${chipWithRunNumber}/analysis_${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}.conf
     ../corry/plot_analog_ce65v2.py -f output/${chipWithRunNumber}/analysis_${testbeam_alphabetic}-${chipWithRunNumber}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root

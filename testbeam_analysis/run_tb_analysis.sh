@@ -88,8 +88,8 @@ else
 fi
 
 ## Replacing window size in CE65RawEvent2StdEventConverter class and recompile
-sed -i "s/X_MX_SIZE = 64/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
-sed -i "s/Y_MX_SIZE = 48/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+sed -i "s/X_MX_SIZE = 48/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+sed -i "s/Y_MX_SIZE = 24/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
 cd /opt/eudaq2/build/
 cmake ..
 make install
