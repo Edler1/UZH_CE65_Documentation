@@ -477,8 +477,10 @@ echo -e "\033[1;95m############################################################\
 ## Below is only necessary since I implemented the niters hackily...
 sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_dut}.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 sed -i "s/detectors_file_updated = \(.*\)_aligned_dut_analysed.conf/detectors_file_updated = \1_aligned_dut_iter${niter_align_dut}_analysed.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+nx_prime=$((nx-1))
+ny_prime=$((ny-1))
 sed -i '/type = "ce65v2"/a\
-roi = [[0,0],[0,24],[47,24],[47,0]]' geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
+roi = [[0,0],[0,'"$ny_prime"'],['"$nx_prime"','"$ny_prime"'],['"$nx_prime"',0]]' geometry/${chipWithRunNumber}/${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
 corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 ../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
