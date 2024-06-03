@@ -43,6 +43,7 @@ if [ "$LOCALCORRY" != "/local/template/corryvreckan" ]; then
 fi
 
 
+#singularity exec --bind container/opt:/opt container/ce65v2_desy_2023-11-latest.sif /bin/bash -c "
 singularity exec --bind `pwd` container/ce65v2_desy_2023-11-latest.sif /bin/bash -c "
        export PATH=${EUDAQINSTALL}/bin:\$PATH &&
        export PATH=${CORRYINSTALL}/bin:\$PATH &&

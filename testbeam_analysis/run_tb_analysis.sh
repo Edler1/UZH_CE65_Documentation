@@ -81,22 +81,23 @@ if [[ $windowSize =~ $pattern ]]; then
     echo "Using window size of ..."
     echo "nx: $nx"
     echo "ny: $ny"
+
+    ## Replacing window size in CE65RawEvent2StdEventConverter class and recompile
+    sed -i "s/X_MX_SIZE = 48/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+    sed -i "s/Y_MX_SIZE = 24/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
+    cd /opt/eudaq2/build/
+    cmake ..
+    make install
+    cd -
 else
     echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
     nx=48
     ny=24
 fi
 
-## Replacing window size in CE65RawEvent2StdEventConverter class and recompile
-sed -i "s/X_MX_SIZE = 48/X_MX_SIZE = $nx/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
-sed -i "s/Y_MX_SIZE = 24/Y_MX_SIZE = $ny/" /opt/eudaq2/user/ITS3/module/src/CE65RawEvent2StdEventConverter.cc
-cd /opt/eudaq2/build/
-cmake ..
-make install
-cd -
 
 ## We start by checking for the ITS3utils dir
-its3_utils_path=`find .. -type d -name "ITS3utils"`
+its3_utils_path=`find . -type d -name "ITS3utils"`
 if [ -n "$its3_utils_path" ]; then
     its3_utils_path=`realpath $its3_utils_path`
 else 
