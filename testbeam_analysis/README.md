@@ -1,6 +1,10 @@
 The analysis can be run using the scripts in [`https://github.com/Edler1/UZH_CE65_Documentation/tree/main/testbeam_analysis`](https://github.com/Edler1/UZH_CE65_Documentation/tree/main/testbeam_analysis)
 
 The scripts in the `testbeam_analysis` directory rely on an [`ITS3utils`](https://github.com/ajitkmaurya/ITS3utils/tree/main) directory that should exist as a subdirectory of where the code is being run. 
+To initilize the submodule after having cloned the `UZH_CE65_Documentation` repo, simply run
+```
+git submodule update --init
+```
 
 To set up for the analysis, put the data files into `ITS3utils/SPS202404/data/<CHIPNAME>`. The files can be manually scp'd or copied using 
 ```
