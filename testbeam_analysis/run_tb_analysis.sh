@@ -58,6 +58,7 @@ chips["pcb18"]="STD225SQ"
 chips["pcb23"]="STD18SQ"
 chips["pcb06"]="STD15SQ"
 chips["pcb07"]="GAP225SQ"
+chips["pcb10"]="GAP225SQ"
 if [ ! ${chips["${pcb}"]} == ${chip} ]; then 
     echo "CHIP-PCB mismatch. Please check params."
     exit
@@ -90,7 +91,7 @@ if [[ $windowSize =~ $pattern ]]; then
     make install
     cd -
 else
-    echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
+    # echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
     nx=48
     ny=24
 fi
@@ -481,7 +482,7 @@ sed -i "s/detectors_file_updated = \(.*\)_aligned_dut_analysed.conf/detectors_fi
 nx_prime=$((nx-1))
 ny_prime=$((ny-1))
 sed -i '/type = "ce65v2"/a\
-roi = [[0,0],[0,'"$ny_prime"'],['"$nx_prime"','"$ny_prime"'],['"$nx_prime"',0]]' geometry/${chipWithRunNumber}/${testbeam_alphabetic}-${chipWithRunNumber}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
+roi = [[0,0],[0,'"$ny_prime"'],['"$nx_prime"','"$ny_prime"'],['"$nx_prime"',0]]' geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
 corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 ../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
