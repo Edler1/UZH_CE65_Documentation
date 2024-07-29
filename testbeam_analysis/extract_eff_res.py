@@ -128,8 +128,8 @@ eff_err_array = eff_err_array[sort_by_seed_indices]
 
 # SPS_STD225SQ_HV10_adc_res_err.txt
 out_dir = "SPS202404/output"
-fname_res = "SPS_"+chip+"_HV10_adc_res_err_APTS.txt"
-fname_eff = "SPS_"+chip+"_HV10_adc_eff_err_APTS.txt"
+fname_res = "SPS_"+chip+"_HV10_adc_res_err.txt"
+fname_eff = "SPS_"+chip+"_HV10_adc_eff_err.txt"
 
 with open(out_dir+"/"+fname_res, "w") as file:
     for i in range(len(seed_th_array)):
