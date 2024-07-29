@@ -38,7 +38,7 @@ Alternatively, paramters can be provided as a command line option via a .txt fil
 
 ### Scanning thresholds (_experimental_)
 
-To scan a suitable range of thresholds (e.g. ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]), the `params/GAP225SQ_SPS.txt` must be edited such that 
+To scan a suitable range of thresholds (e.g. ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]), the `params/SPS202404/GAP225SQ.txt` must be edited such that 
 ```
 seedthr_analysis="400"
 nbh_analysis="400"
@@ -56,13 +56,13 @@ _It is necessary to comment out the noisemap creation and (pre)alignment loops a
 
 After each threshold value has been scanned there should be analysis output files in the `ITS3utils/SPS202404/output/GAP225SQ/` folder. These will be of the form `analysis_SPS-GAP225SQ_173004514_240424004519_seedthr400_nbh400_snr3_cluster.root` for each threshold value.
 
-In order to extract the resolution and efficiency, the `hacky_edits.sh` script can be run as `./hacky_edits.sh` in order to edits the `ITS3utils/corry/plot_*.py` plotting scripts such that these values are printed. 
+In order to extract the resolution and efficiency, the `hacky_edits.sh` script can be run as `./hacky_edits.sh` in order to edit the `ITS3utils/corry/plot_*.py` plotting scripts such that these values are printed. 
 
 The `extract_eff_res.py` script extracts the resolution and efficiencies along with their errors to `.txt` files, where the following parameters should be set
 ```
-working_dir = "/user/eploerer/UZH_CE65_Documentation/testbeam_analysis/ITS3utils"
+67 working_dir = "/user/eploerer/UZH_CE65_Documentation/testbeam_analysis/ITS3utils"
 ...
-seed_thresholds = ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]
+71 seed_thresholds = ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]
 ```
 as appropriate for the given analysis. The script is run as `python3 extract_eff_res.py GAP225SQ`.
 
