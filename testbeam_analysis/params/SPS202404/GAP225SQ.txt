@@ -7,7 +7,7 @@
 # Maybe re-order some of these, they look awkward
 testbeam="SPS202404"
 chip="GAP225SQ"
-pcb="pcb07"
+pcb="pcb10"
 #HV=()
 HV="10"
 momentum=120   #GeV
