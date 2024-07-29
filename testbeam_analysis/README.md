@@ -66,6 +66,8 @@ The `extract_eff_res.py` script extracts the resolution and efficiencies along w
 ```
 as appropriate for the given analysis. The script is run as `python3 extract_eff_res.py GAP225SQ`.
 
+To plot the efficiencies and resolutions the scripts provided in the `plotting_scripts` folder can be used.
+
 <sub>Throughout these examples _GAP225SQ_ was used, but the same holds for other chips. To extract efficiences and resolutions for all chips simply use `meta_extract.sh`.</sub>
 
 
