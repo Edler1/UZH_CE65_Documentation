@@ -37,12 +37,12 @@ database = {
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
       'calibration': 4.29,
-      'noise':'output/SPS-GAP225SQ_HV10-noisemap.root',
+      'noise':'/local/ITS3utils/SPS202404/qa/GAP225SQ/SPS-GAP225SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'output/analysis_SPS-GAP225SQ_173004514_240424004519_seedthr400_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/ament_tests/output/GAP225SQ/001111/analysis_SPS-GAP225SQ_173004529_240424074819_seedthr429_nbh100_snr3_window.root',
       }
     },
     '15':{
@@ -52,12 +52,12 @@ database = {
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
       'calibration': 4.22,
-      'noise':'output/SPS-GAP15SQ_HV10-noisemap.root',
+      'noise':'/local/ITS3utils/SPS202404/qa/GAP15SQ/SPS-GAP15SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'output/analysis_SPS-GAP15SQ_164222116_240419010802_seedthr400_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/ament_tests/output/GAP15SQ/002111/analysis_SPS-GAP15SQ_172204417_240423235612_seedthr422_nbh100_snr3_window.root',
       }
     },
   },
@@ -73,24 +73,24 @@ database = {
       'title': 'AC amp.',
       'pitch': '22.5',
       'calibration': 4.25,
-      'noise':'output/SPS-STD225SQ_HV10-noisemap.root',
+      'noise':'/local/ITS3utils/SPS202404/qa/STD225SQ/SPS-STD225SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'output/analysis_SPS-STD225SQ_165100540_240419100546_seedthr400_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/ament_tests/output/STD225SQ/003111/analysis_SPS-STD225SQ_171145237_240422155839_seedthr425_nbh100_snr3_window.root',
       }
     },
     '15':{
       'title': 'AC amp.',
       'pitch': '15',
       'calibration': 4.15,
-      'noise':'output/SPS-STD15SQ_HV10-noisemap.root',
+      'noise':'/local/ITS3utils/SPS202404/qa/STD15SQ/SPS-STD15SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'output/analysis_SPS-STD15SQ_165232707_240419232713_seedthr400_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/ament_tests/output/STD15SQ/004111/analysis_SPS-STD15SQ_172085214_240423184754_seedthr415_nbh100_snr3_window.root',
       }
     },
   },
@@ -145,7 +145,7 @@ def plot_alice(painter : plot_util.Painter, x1 = 0.02, y1 = 0.03, x2 = 0.47, y2 
   if test == 'beam':
     label = painter.new_obj(plot_util.InitALICELabel(x1, y1, x2, y2, 
       align=12, type='#bf{ALICE ITS3-WP3} beam test #it{preliminary}', size=size, pos=pos))
-    painter.add_text(label, '@CERN-SPS April 2024, 120 GeV/#it{c} #pi^{-}', size=size*0.75, align=align)
+    painter.add_text(label, '@CERN-SPS April 2024, 120 GeV/#it{c} hadrons', size=size*0.75, align=align)
   else:
     label = painter.new_obj(plot_util.InitALICELabel(x1, y1, x2, y2, 
       align=12, type='#bf{ALICE ITS3-WP3} #it{preliminary}', size=size, pos=pos))
