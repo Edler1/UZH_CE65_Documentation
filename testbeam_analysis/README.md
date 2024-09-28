@@ -37,7 +37,7 @@ Alternatively, paramters can be provided as a command line option via a .txt fil
 
 ### Scanning thresholds
 
-To scan a suitable range of _e-_ thresholds (e.g. ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]), the `params/SPS202404/GAP225SQ.txt` must be edited such that the seed and neighbour thresholds are given in _ADCu_
+To scan a suitable range of _e-_ thresholds (e.g. ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]), the `params/SPS202404/GAP225SQ/GAP225SQ.txt` must be edited such that the seed and neighbour thresholds are given in _ADCu_
 
 ```
 seedthr_analysis="429"
