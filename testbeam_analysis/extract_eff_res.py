@@ -63,12 +63,30 @@ def compute_position_resolution(residual_x_val, residual_x_err, residual_y_val, 
 #PARAMS#
 ########
 
-#working_dir = "/ada_mnt/ada/user/eploerer/UZH_CE65_Documentation/testbeam_analysis/ITS3utils"
-working_dir = "/user/eploerer/UZH_CE65_Documentation/testbeam_analysis/ITS3utils"
-chip = "STD15SQ"
+working_dir = "/local/ITS3utils"
+chip = "GAP225SQ"
+
 if len(sys.argv)==2: chip = sys.argv[1]
-#seed_thresholds = ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]
-seed_thresholds = ["100", "200", "300", "400", "500", "600", "700", "800", "900", "1000", "1100", "1200", "1300", "1400", "1500", "1600", "1700", "1800", "1900", "2000"]
+
+# These thresholds must match the e- thresholds at which the analysis was performed
+seed_thresholds = ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]
+
+# factor should be set to the conversion factor between ADU and e for the specific chip. Check google docs for full list of factors:
+# https://docs.google.com/document/d/19Fcl0ddjLbrOKS4Pklz0K1czCOLfNEMVHt0L1k96xvo/edit
+factor=0.23287
+
+
+# Convert seed thresholds into ADU 
+seed_thresholds = [str(int((float(seed_threshold)/factor)+0.5)) for seed_threshold in seed_thresholds]
+
+
+
+
+
+
+###########
+#EXECUTION#
+###########
 
 
 os.chdir(working_dir)
@@ -82,14 +100,12 @@ print(os.getcwd())
 
 file_list = []
 for threshold in seed_thresholds:
-    #source_file = subprocess.run(['ls', 'SPS202404/output/GAP15SQ/analysis_SPS-GAP15SQ_*_seedthr[0-9]*_nbh[0-9]*_cluster.root'], capture_output=True, text=True)
     source_file = subprocess.run(['ls SPS202404/output/'+chip+'/analysis_SPS-'+chip+'_*_seedthr'+threshold+'_nbh'+threshold+'*_cluster.root'], shell=True, capture_output=True, text=True)
-    # Below is for window method where the neighbour threshold is fixed.
-    #source_file = subprocess.run(['ls SPS202404/output/'+chip+'/analysis_SPS-'+chip+'_*_seedthr'+threshold+'_nbh'+'100'+'*_window.root'], shell=True, capture_output=True, text=True)
     source_file = source_file.stdout.strip()
     slicing_index = source_file.find("analysis") 
     source_file = source_file[slicing_index:]
     file_list.append(source_file)
+
 
 
 
@@ -119,7 +135,9 @@ for file in file_list:
 # Sort arrays in ascending order for plotting later
 sort_by_seed_indices = np.argsort(seed_th_array.astype(float))
 
-seed_th_array = seed_th_array[sort_by_seed_indices]
+
+
+seed_th_array = (seed_th_array[sort_by_seed_indices].astype(float))*factor
 pos_res_array = pos_res_array[sort_by_seed_indices]
 pos_res_err_array = pos_res_err_array[sort_by_seed_indices]
 eff_array = eff_array[sort_by_seed_indices]
@@ -133,10 +151,10 @@ fname_eff = "SPS_"+chip+"_HV10_adc_eff_err.txt"
 
 with open(out_dir+"/"+fname_res, "w") as file:
     for i in range(len(seed_th_array)):
-        file.write(seed_th_array[i]+" "+pos_res_array[i]+" "+pos_res_err_array[i]+"\n")
+        file.write(str(seed_th_array[i])+" "+pos_res_array[i]+" "+pos_res_err_array[i]+"\n")
 
 with open(out_dir+"/"+fname_eff, "w") as file:
     for i in range(len(seed_th_array)):
-        file.write(seed_th_array[i]+" "+eff_array[i]+" "+eff_err_array[i]+"\n")
+        file.write(str(seed_th_array[i])+" "+eff_array[i]+" "+eff_err_array[i]+"\n")
 
 

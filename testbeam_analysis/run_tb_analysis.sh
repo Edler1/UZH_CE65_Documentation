@@ -1,5 +1,89 @@
-#!/bin/bash
+!/bin/bash
 set -e
+set -x
+
+
+# Philosophy: This script is the upgraded "run_tb_analysis.sh". Extra features, but backwards-compatible.
+
+
+
+
+##########
+# Syntax #
+##########
+
+
+
+# Syntax: This script is run within the container as legacy "./run_tb_alignment.sh params/SPS202404/STD225SQ/007/STD225SQ.txt"
+# Or using flag options "./run_tb_alignment.sh -p params/SPS202404/STD225SQ/007/STD225SQ.txt -t some_tag -a -b
+# Note that all options listed below are optional.
+# -p : params .txt file (can optionally be passed without -p flag as the first argument).
+# -t : optional analysis tag. Can be used to distinguish different runs (e.g. files). Analysis output will be inside ${chip}/${tag} dir if passed.
+# -a : Skip execution of alignment loops, and only run analysis. Used for threshold scans.
+# -b : Suppress printing of analysis.pdf file. Used for threshold scans.
+
+
+
+
+date
+
+
+###########
+# Parsing #
+###########
+
+# Initialize variables
+flag_analysis=false
+flag_batch=false
+params=""
+tag=""
+
+
+# Allow passing of params via command-line specified .txt file without flags
+# Check if the first argument is params file and remove, to allow backwards compatibility
+if [[ $# -gt 0 && -f "$1" ]]; then
+    params="$1"
+    shift  # Remove the file argument from the list so getopts can process the remaining options
+fi
+
+
+# Parse options using getopts
+while getopts "abp:t:" opt; do
+  if [ "$opt" == "a" ]; then
+    flag_analysis=true
+  elif [ "$opt" == "b" ]; then
+    flag_batch=true
+  elif [ "$opt" == "p" ]; then
+    if [[ -f "$OPTARG" ]]; then
+        params="$OPTARG"
+    else
+        echo "\"${OPTARG}\" does not point to a valid .txt file."
+        exit 1
+    fi
+  elif [ "$opt" == "t" ]; then
+    tag="$OPTARG"
+  else
+    echo "Unknown option: -$opt"
+    exit 1
+  fi
+done
+
+
+
+echo "flag_analysis -> ${flag_analysis}"
+echo "flag_batch -> ${flag_batch}"
+echo "params -> ${params}"
+echo "tag -> ${tag}"
+
+
+
+# Add trailing slash if tag is passed
+tag_w_slash="${tag:+${tag}/}"
+
+
+
+
+
 
 ##########
 # Params #
@@ -38,13 +122,22 @@ niter_align_tel=1
 niter_prealign_dut=1
 niter_align_dut=1
 
+spatial_cuts=(100 100 75 75 50 50 25 25)
 
-## Allow passing of params via command-line specified .txt file
-if [[ $# -eq 1 && -f "$1" ]]; then
-    source $1
+absolute_filepath=""
+
+
+
+
+# Source params file
+if [[ -n "${params}" ]]; then
+    source ${params}
 else 
     echo "No params .txt file passed. Running with script defaults."
 fi
+
+
+
 
 
 ## Below we just define the associative array from "copy_tb_files.sh" to check that chip and pcb match... 
@@ -63,7 +156,6 @@ if [ ! ${chips["${pcb}"]} == ${chip} ]; then
     echo "CHIP-PCB mismatch. Please check params."
     exit
 fi
-
 
 ## Allow calling from a steering script also
 if [ "${1:0:3}" == "pcb" ]; then
@@ -91,7 +183,7 @@ if [[ $windowSize =~ $pattern ]]; then
     make install
     cd -
 else
-    # echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
+    #echo "Window size not defined, use full window of NX=48 and NY=24. Continuing!"
     nx=48
     ny=24
 fi
@@ -105,6 +197,7 @@ else
     echo "Cannot find dir \"ITS3utils\". Please make sure it is visible from within \"`pwd`\"."
     exit
 fi
+
 
 
 ## Find beam+noise files
@@ -143,23 +236,68 @@ run_number_noise=`echo "${datafile_noise}" | sed "s/.*run\([0-9]*_[0-9]*\)\.raw/
 cd "${its3_utils_path}/${testbeam}"
 dirs=( config geometry masks qa output data )
 for dir in ${dirs[@]}; do
-    if [ ! -d "${dir}/${chip}" ]; then 
-        mkdir -p ${dir}/${chip}
+
+    if [ ! -d "${dir}/${chip}/${tag}" ]; then 
+        mkdir -p "${dir}/${chip}/${tag}"
     fi
+
     if [ "${dir}" == "masks" ]; then 
         for i in {0..5}; do 
-           touch masks/${chip}/ref-plane${i}_HV${HV}.txt 
+           touch masks/${chip}/${tag_w_slash}ref-plane${i}_HV${HV}.txt 
        done
     fi
 done 
+
 
 testbeam_alphabetic=`echo "${testbeam}" | egrep -o "^[A-Z]+"`
 
 
 
 
-## Now we copy over the files and use `sed` to edit them
+# Now we copy over the files and use `sed` to edit them
 ## By convention the prototype for each of the copies will be in the parent directory of the class (e.g. masks/ref-plane0.txt)
+
+
+
+#######################
+# Define source files #
+#######################
+geo_source="geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" 
+prealign_source="config/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf" 
+align_source="config/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf" 
+prealign_dut_source="config/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf" 
+align_dut_source="config/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf" 
+analysis_source="config/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf"
+
+# check tag passed through params file matches command line tag
+ptag=$(echo `dirname "$3"` | cut -d'/' -f5)
+if [ ! ${ptag} = ${tag} ]; then 
+    echo "Tag mismatch. Please match tags passed in command line and params file."
+fi
+
+# redefine source files if they have been passed
+if [ -e $its3_utils_path/../`dirname "$3"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo ]; then 
+    geo_source=$its3_utils_path/../`dirname "$3"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo 
+fi
+if [ -e $its3_utils_path/../`dirname "$3"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    prealign_source=$its3_utils_path/../`dirname "$3"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+fi
+if [ -e $its3_utils_path/../`dirname "$3"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    align_source=$its3_utils_path/../`dirname "$3"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+fi
+if [ -e $its3_utils_path/../`dirname "$3"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    prealign_dut_source=$its3_utils_path/../`dirname "$3"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+fi
+if [ -e $its3_utils_path/../`dirname "$3"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    align_dut_source=$its3_utils_path/../`dirname "$3"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+fi
+if [ -e $its3_utils_path/../`dirname "$3"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    analysis_source=$its3_utils_path/../`dirname "$3"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+fi
+
+#####################################################
+# Check if absolute path is provided in params file #
+#####################################################
 
 
 
@@ -168,153 +306,187 @@ testbeam_alphabetic=`echo "${testbeam}" | egrep -o "^[A-Z]+"`
 # Geometry file #
 #################
 # copy file from prototype
-#cp "geometry/GAP225SQ/prealignment_tel_${testbeam_alphabetic}-GAP225SQ_HV10.geo" "geometry/${chip}/prealignment_tel_${testbeam_alphabetic}-${chip}_HV${HV}.geo"
-cp "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" "geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo"
+cp ${geo_source} "geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo"
 
-# replace masks into chip subdir
-sed -i "s/DESY202311\/masks/${testbeam}\/masks\/${chip}/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
-# add hv to mask names
-sed -i "s/\(plane[0-5]\)/\1_HV${HV}/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
+# If geo_source is default, then we must alter it. Otherwise it is assumed to be correct.
+if [ "${geo_source}" == "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" ]; then
 
-# write correct CE65V2 pixel-pitch
-pitch=`echo "${chip}" | egrep -o "[0-9]+"`
-if [ "${pitch}" -gt "100" ]; then
-    ## Container doesn't have bc installed by default... Let's hardcode for now.
-    #pitch=`echo "scale=1;${pitch}/10" | bc`
-    pitch=`echo "22.5"`
+    # replace masks into chip subdir
+    sed -i "s#\.\./\.\./\.\./DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+
+    # add hv to mask names
+    sed -i "s/\(plane[0-5]\)/\1_HV${HV}/g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+
+    # write correct CE65V2 pixel-pitch
+    pitch=`echo "${chip}" | egrep -o "[0-9]+"`
+    if [ "${pitch}" -gt "100" ]; then
+        pitch=`echo "22.5"`
+    fi
+    sed -i "s/pixel_pitch = 18um, 18um/pixel_pitch = ${pitch}um, ${pitch}um/g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+
+
+    # Note that here we are actually keeping the old noisemap file
+    sed -i "s#\.\./qa/DESY-GAP18SQ_HV10-noisemap\.root#${its3_utils_path}/${testbeam}/qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap.root#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+
 fi
-sed -i "s/pixel_pitch = 18um, 18um/pixel_pitch = ${pitch}um, ${pitch}um/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
 
-# point to correct noisemap file
-#sed -i "s/GAP18SQ_HV10-noisemap/${chip}_HV${HV}-noisemap/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
-sed -i "s/qa\/DESY-GAP18SQ_HV10-noisemap\.root/..\/qa\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap.root/g" geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}.geo
+
+
+
 
 ############################
 # Prealign-tel config file #
 ############################
 # copy file from prototype
-cp "config/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+cp ${prealign_source} "config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 
 # update detectors_file(s) file name
-sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#\.\./geometry/DESY-GAP18SQ_HV10#${its3_utils_path}/${testbeam}/geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update output file name
 #sed -i "s/prealignment/fox\/prealignment/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-sed -i "s/prealignment/${chip}\/prealign/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#prealignment#${chip}/${tag_w_slash}prealign#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update file name (should only apply to .root at this point)
-sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set number_of_events
-sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+if [ -n "${absolute_filepath}" ]; then
+    # sed w/ abs filepath
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${absolute_filepath}#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
+
 
 #########################
 # Align-tel config file #
 #########################
 # copy file from prototype
-cp "config/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+cp ${align_source} "config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 # update detectors_file(s) file name
-sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#\.\./geometry/DESY-GAP18SQ_HV10#${its3_utils_path}/${testbeam}/geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update output file name
-sed -i "s/alignment/${chip}\/align/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#alignment#${chip}/${tag_w_slash}align#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update file name (should only apply to .root at this point)
-sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+
+sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set number_of_events
-sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-
+if [ -n "${absolute_filepath}" ]; then
+    # sed w/ abs filepath
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${absolute_filepath}#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
 
 # set momentum
-sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+
+
 
 
 ############################
 # Prealign-dut config file #
 ############################
 # copy file from prototype
-cp "config/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+cp ${prealign_dut_source} "config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 # update detectors_file(s) file name
-sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#\.\./geometry/DESY-GAP18SQ_HV10#${its3_utils_path}/${testbeam}/geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update output file name
-sed -i "s/prealignment/${chip}\/prealign/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#prealignment#${chip}/${tag_w_slash}prealign#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update file name (should only apply to .root at this point)
-sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 # set number_of_events
-sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+if [ -n "${absolute_filepath}" ]; then
+    # sed w/ abs filepath
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${absolute_filepath}#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 #########################
 # Align-dut config file #
 #########################
 # copy file from prototype
-cp "config/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+cp ${align_dut_source} "config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 # update detectors_file(s) file name
-sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#\.\./geometry/DESY-GAP18SQ_HV10#${its3_utils_path}/${testbeam}/geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update output file name
-sed -i "s/alignment/${chip}\/align/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#alignment#${chip}/${tag_w_slash}align#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update file name (should only apply to .root at this point)
-sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set number_of_events
-sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+if [ -n "${absolute_filepath}" ]; then
+    # sed w/ abs filepath
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${absolute_filepath}#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
 
 # set momentum
-sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_alignment}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_alignment}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_alignment}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_alignment}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 
@@ -322,175 +494,221 @@ sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/alig
 # Analysis config file #
 #########################
 # copy file from prototype
-cp "config/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf" "config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+cp ${analysis_source} "config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
 
 # update firstly histogram name
-sed -i "s/analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root/${chip}\/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root/${its3_utils_path}\/${testbeam}\/output\/${chip}\/${tag}\/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root/g" config/${chip}/${tag}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root#${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # update detectors_file(s) file name
-sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/geometry\/${chip}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#\.\./geometry/DESY-GAP18SQ_HV10#${its3_utils_path}/${testbeam}/geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+
+
 
 # update file name (should only apply to .root at this point)
-sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/DESY-GAP18SQ_HV10/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set number_of_events
-sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/number_of_events.*$/number_of_events = ${number_of_events}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # replace inputfilename
-sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/data\/${chip}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# sed -i "s/data\/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw/..\/..\/data\/${chip}\/${tag}\/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw/g" config/${chip}/${tag}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# replace inputfilename
+if [ -n "${absolute_filepath}" ]; then
+    # sed w/ abs filepath
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${absolute_filepath}#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s#\.\./data/ce65v2_pcb02_hv10_beam_run482100624_231128100629\.raw#${its3_utils_path}/${testbeam}/data/${chip}/ce65v2_${pcb}_hv${HV}${chillerTemp}_beam${windowSize}_run${run_number_beam}\.raw#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
 
 # set momentum
-sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_seed
-sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_seed.*$/threshold_seed = ${seedthr_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set threshold_neighbor
-sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/threshold_neighbor.*$/threshold_neighbor = ${nbh_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_seed
-sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set thresholdSNR_neighbor
-sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 # set method
-sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+
+# set method
+sed -i "s/^spatial_cut_abs=.*$/spatial_cut_abs=${spatial_cut_abs_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
 
 
+if ! $flag_analysis; then
 
-############
-# Noisemap #
-############
 
-##VERIFY COMMANDS -> qa +  also output paths!
+    ############
+    # Noisemap #
+    ############
 
-echo -e "\n\n\n\033[1;95mStarting DUMP\033[0m"
-../eudaq/CE65V2Dump.py data/${chip}/${datafile_noise} -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise --qa --nx ${nx} --ny ${ny}
+    ## Only needs to be run once per analysis
+    ## At the moment multiple chips with same name but different PCBs will not trigger separate noise files. Be careful!
 
-../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
+    echo -e "\n\n\n\033[1;95mStarting DUMP\033[0m"
 
-####################
-# Prealignment-tel #
-####################
 
-echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
-echo -e "\033[1;95m# execution : corry -c config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
-echo -e "\033[1;95m############################################################################\033[0m\n\n\n\033[0m"
-
-## Idea now is to introduce the number of iters.
-# Start by defining necessary conf files. Geo files will be written out.
-# Then call iterative process...
-i=1
-## it starts from 1. Thus every config file should be subscripted? else we will have too many else conditions...
-while [ $i -le ${niter_prealign_tel} ]; do 
-    cp config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/detectors_file_updated = \(.*\)\.conf/detectors_file_updated = \1_iter${i}.conf/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/histogram_file\(.*\)\.root/histogram_file\1_iter${i}.root/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    if [ ${i} -gt 1 ]; then 
-        sed -i "s/detectors_file \(.*\)\.geo/detectors_file \1_prealigned_tel_iter$((i-1)).conf/g" config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+    if [[ ! -f "qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root" ]]; then
+        ../eudaq/CE65V2Dump.py data/${chip}/${datafile_noise} -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise --qa --nx ${nx} --ny ${ny}
     fi
-    corry -c config/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    i=$((i+1))
-done 
-../corry/plot_analog_ce65v2.py -f output/${chip}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_prealign_tel}.root --noisy-freq 0.95
 
-
-#################
-# Alignment-tel #
-#################
-
-echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
-echo -e "\033[1;95m# execution : corry -c config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
-echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
-i=1
-#config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-## it starts from 1. Thus every config file should be subscripted? else we will have too many else conditions...
-while [ $i -le ${niter_align_tel} ]; do 
-    cp config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/detectors_file_updated = \(.*\)\.conf/detectors_file_updated = \1_iter${i}.conf/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/histogram_file\(.*\)\.root/histogram_file\1_iter${i}.root/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    if [ ${i} -gt 1 ]; then 
-        sed -i "s/detectors_file \(.*\)\_prealigned_tel.conf/detectors_file \1_aligned_tel_iter$((i-1)).conf/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    else 
-        sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_prealign_tel}.conf/g" config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+    if [[ ! -f "qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap.root" ]]; then
+        ../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
     fi
-    corry -c config/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    i=$((i+1))
-done 
-../corry/plot_analog_ce65v2.py -f output/${chip}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_tel}.root --noisy-freq 0.95
 
-
-####################
-# Prealignment-dut #
-####################
-
-echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
-echo -e "\033[1;95m# execution : corry -c config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
-echo -e "\033[1;95m############################################################################\033[0m\n\n\n"
-i=1
-while [ $i -le ${niter_prealign_dut} ]; do 
-    cp config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/detectors_file_updated = \(.*\)\.conf/detectors_file_updated = \1_iter${i}.conf/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/histogram_file\(.*\)\.root/histogram_file\1_iter${i}.root/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    if [ ${i} -gt 1 ]; then 
-        sed -i "s/detectors_file \(.*\)\_aligned_tel.conf/detectors_file \1_prealigned_dut_iter$((i-1)).conf/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    else 
-        sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_tel}.conf/g" config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+    
+    
+    
+    
+    ####################
+    # Prealignment-tel #
+    ####################
+    
+    echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
+    echo -e "\033[1;95m# execution : corry -c config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+    echo -e "\033[1;95m############################################################################\033[0m\n\n\n\033[0m"
+    
+    i=1
+    while [ $i -le ${niter_prealign_tel} ]; do 
+        cp config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        if [ ${i} -gt 1 ]; then 
+            sed -i "s#detectors_file \(.*\)\.geo#detectors_file \1_prealigned_tel_iter$((i-1)).conf#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        corry -c config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        # ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag}/prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.root --noisy-freq 0.95
+        i=$((i+1))
+    done 
+    ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_prealign_tel}.root --noisy-freq 0.95
+    
+    
+    #################
+    # Alignment-tel #
+    #################
+    
+    echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
+    echo -e "\033[1;95m# execution : corry -c config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+    echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
+    i=1
+    
+    
+    
+    if [ "${spatial_cut_iterations}" == "True" ]; then
+        niter_align_tel=${#spatial_cuts[@]}
     fi
-    corry -c config/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    i=$((i+1))
-done 
-
-../corry/plot_analog_ce65v2.py -f output/${chip}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_prealign_dut}.root --noisy-freq 0.95
-
-#################
-# Alignment-dut #
-#################
-
-echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
-echo -e "\033[1;95m# execution : corry -c config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
-echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
-i=1
-while [ $i -le ${niter_align_dut} ]; do 
-    cp config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/detectors_file_updated = \(.*\)\.conf/detectors_file_updated = \1_iter${i}.conf/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    sed -i "s/histogram_file\(.*\)\.root/histogram_file\1_iter${i}.root/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    if [ ${i} -gt 1 ]; then 
-        sed -i "s/detectors_file \(.*\)\_prealigned_dut.conf/detectors_file \1_aligned_dut_iter$((i-1)).conf/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    else 
-        sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_prealign_dut}.conf/g" config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+    while [ $i -le ${niter_align_tel} ]; do 
+        cp config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        # Iteratively decrease spatial_cut if spatial_cut_iterations variable set to true
+        if [ "${spatial_cut_iterations}" == "True" ]; then
+            sed -i "s#spatial_cut_abs=.*#spatial_cut_abs=${spatial_cuts[$((i-1))]}um,${spatial_cuts[$((i-1))]}um#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        if [ ${i} -gt 1 ]; then 
+            sed -i "s#detectors_file \(.*\)\_prealigned_tel.conf#detectors_file \1_aligned_tel_iter$((i-1)).conf#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        else 
+            sed -i "s#detectors_file \(.*\)\.conf#detectors_file \1_iter${niter_prealign_tel}.conf#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        corry -c config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        # ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.root --noisy-freq 0.95
+        i=$((i+1))
+    done 
+    ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_tel}.root --noisy-freq 0.95
+    
+    
+    ####################
+    # Prealignment-dut #
+    ####################
+    
+    echo -e "\n\n\n\033[1;95m############################################################################\033[0m"
+    echo -e "\033[1;95m# execution : corry -c config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+    echo -e "\033[1;95m############################################################################\033[0m\n\n\n"
+    i=1
+    while [ $i -le ${niter_prealign_dut} ]; do 
+        cp config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        if [ ${i} -gt 1 ]; then 
+            sed -i "s#detectors_file \(.*\)\_aligned_tel.conf#detectors_file \1_prealigned_dut_iter$((i-1)).conf#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        else 
+            sed -i "s#detectors_file \(.*\)\.conf#detectors_file \1_iter${niter_align_tel}.conf#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        corry -c config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        i=$((i+1))
+    done 
+    
+    ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_prealign_dut}.root --noisy-freq 0.95
+    
+    #################
+    # Alignment-dut #
+    #################
+    
+    echo -e "\n\n\n\033[1;95m#########################################################################\033[0m"
+    echo -e "\033[1;95m# execution : corry -c config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+    echo -e "\033[1;95m#########################################################################\033[0m\n\n\n"
+    i=1
+    if [ "${spatial_cut_iterations}" == "True" ]; then
+        niter_align_dut=${#spatial_cuts[@]}
     fi
-    corry -c config/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-    i=$((i+1))
-done 
+    while [ $i -le ${niter_align_dut} ]; do 
+        cp config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        
 
-../corry/plot_analog_ce65v2.py -f output/${chip}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_dut}.root --noisy-freq 0.95
+
+        sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        if [ "${spatial_cut_iterations}" == "True" ]; then
+            sed -i "s#spatial_cut_abs=.*#spatial_cut_abs=${spatial_cuts[$((i-1))]}um,${spatial_cuts[$((i-1))]}um#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        if [ ${i} -gt 1 ]; then 
+            sed -i "s#detectors_file \(.*\)\_prealigned_dut.conf#detectors_file \1_aligned_dut_iter$((i-1)).conf#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        else 
+            sed -i "s#detectors_file \(.*\)\.conf#detectors_file \1_iter${niter_prealign_dut}.conf#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        fi
+        corry -c config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        i=$((i+1))
+    done 
+    
+    ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${niter_align_dut}.root --noisy-freq 0.95
+
+fi
 
 ############
 # Analysis #
 ############
 echo -e "\n\n\n\033[1;95m############################################################\033[0m"
-echo -e "\033[1;95m# corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
+echo -e "\033[1;95m# corry -c config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf #\033[0m"
 echo -e "\033[1;95m############################################################\033[0m\n\n\n"
 
 
 ## Below is only necessary since I implemented the niters hackily...
-sed -i "s/detectors_file \(.*\)\.conf/detectors_file \1_iter${niter_align_dut}.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-sed -i "s/detectors_file_updated = \(.*\)_aligned_dut_analysed.conf/detectors_file_updated = \1_aligned_dut_iter${niter_align_dut}_analysed.conf/g" config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#detectors_file \(.*\)\.conf#detectors_file \1_iter${niter_align_dut}.conf#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+sed -i "s#detectors_file_updated = \(.*\)_aligned_dut_analysed.conf#detectors_file_updated = \1_aligned_dut_iter${niter_align_dut}_analysed.conf#g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 nx_prime=$((nx-1))
 ny_prime=$((ny-1))
 sed -i '/type = "ce65v2"/a\
-roi = [[0,0],[0,'"$ny_prime"'],['"$nx_prime"','"$ny_prime"'],['"$nx_prime"',0]]' geometry/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
+roi = [[0,0],[0,'"$ny_prime"'],['"$nx_prime"','"$ny_prime"'],['"$nx_prime"',0]]' geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}_aligned_dut_iter${niter_align_dut}.conf
 
-corry -c config/${chip}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
-../corry/plot_analog_ce65v2.py -f output/${chip}/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
+corry -c config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+if ! $flag_batch; then
+    ../corry/plot_analog_ce65v2.py -f output/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root
+fi
 
 
 echo -e "\n\n\n\033[1;95m-FINISHED EXECUTION-\033[0m\n\n\n"
 
 
+date
 
 
 

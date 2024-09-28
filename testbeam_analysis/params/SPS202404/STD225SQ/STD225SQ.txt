@@ -1,3 +1,4 @@
+
 ##########
 # Params #
 ##########
@@ -5,14 +6,14 @@
 
 # Maybe re-order some of these, they look awkward
 testbeam="SPS202404"
-chip="GAP15SQ"
-pcb="pcb19"
+chip="STD225SQ"
+pcb="pcb18"
 #HV=()
 HV="10"
 momentum=120   #GeV
 #(optional, leave blank)
-run_number_beam="164222116_240419010802"
-run_number_noise=""
+run_number_beam="171145237_240422155839"
+run_number_noise="171170701_240422170706"
 number_of_events=-1
 
 seedthr_alignment="900"
@@ -20,10 +21,11 @@ nbh_alignment="200"
 snr_seed_alignment="9"
 snr_neighbor_alignment="1"
 
-seedthr_analysis="400"
+seedthr_analysis="425"
 nbh_analysis="100"
 snr_seed_analysis="3"
 snr_neighbor_analysis="2"
+spatial_cut_abs_analysis="75um,75um"
 
 method_alignment="cluster"
 method_analysis="window"
@@ -33,3 +35,4 @@ niter_align_tel=6
 niter_prealign_dut=1
 niter_align_dut=4
 
+spatial_cut_iterations="True"
