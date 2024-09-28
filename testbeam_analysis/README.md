@@ -27,31 +27,40 @@ The working directory is defined as wherever the script is run from. The only im
 The analysis is run by calling
 ```
 ./run_tb_analysis.sh
-
 ```
 The parameters of the analysis are defined in the beginning of the script.
 
 Alternatively, paramters can be provided as a command line option via a .txt file. There are several examples in the [`https://github.com/Edler1/UZH_CE65_Documentation/blob/main/testbeam_analysis/params`](https://github.com/Edler1/UZH_CE65_Documentation/blob/main/testbeam_analysis/params) directories:
 ```
-./run_tb_analysis.sh params/SPS202404/GAP225SQ.txt
+./run_tb_analysis.sh params/SPS202404/GAP225SQ/GAP225SQ.txt
 ```
 
-### Scanning thresholds (_experimental_)
+### Scanning thresholds
 
-To scan a suitable range of thresholds (e.g. ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]), the `params/SPS202404/GAP225SQ.txt` must be edited such that 
-```
-seedthr_analysis="400"
-nbh_analysis="400"
-```
-for each corresponding threshold value. A script is likely to be helpful here. At the moment the threshold scans are done in _ADCu_.
+To scan a suitable range of _e-_ thresholds (e.g. ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]), the `params/SPS202404/GAP225SQ.txt` must be edited such that the seed and neighbour thresholds are given in _ADCu_
 
+```
+seedthr_analysis="429"
+nbh_analysis="429"
+```
+for each corresponding _e-_ threshold value. 
 
 In addition, the _cluster_ method is generally preferred when scanning thresholds, so the clusterisation method should be changed to
 ```
 method_analysis="cluster"
 ```
 
-_It is necessary to comment out the noisemap creation and (pre)alignment loops at the end of `run_tb_analysis.sh` as the telescope+chip should __not__ be realigned for every threshold._
+At the moment the threshold scans are done in _e-_.
+
+
+This can be done using the `scan_thresholds.sh` script if the `run_tb_analysis.sh` is being used for analysis, otherwise a similar script should be written for the corresponding analysis command (e.g. `corry -c some_config_file.conf`)
+
+```
+./scan_thresholds.sh 
+```
+
+
+<sub> _It is necessary to run the `run_tb_analysis.sh -a` with the `-a` option to prevent noisemap creation and (pre)alignment loops at the end of `run_tb_analysis.sh` as the telescope+chip should __not__ be realigned for every threshold._ </sub>
 
 
 After each threshold value has been scanned there should be analysis output files in the `ITS3utils/SPS202404/output/GAP225SQ/` folder. These will be of the form `analysis_SPS-GAP225SQ_173004514_240424004519_seedthr400_nbh400_snr3_cluster.root` for each threshold value.
@@ -63,13 +72,16 @@ In order to extract the resolution and efficiency, the `hacky_edits.sh` script s
 
 The `extract_eff_res.py` script extracts the resolution and efficiencies along with their errors to `.txt` files, where the following parameters should be set
 ```
-67 working_dir = "/user/eploerer/UZH_CE65_Documentation/testbeam_analysis/ITS3utils"
+66 working_dir = "/local/ITS3utils"
+67 chip = "GAP225SQ"
 ...
-71 seed_thresholds = ["200", "400", "600", "800", "1000", "1200", "1400", "1600", "1800", "2000"]
+72 seed_thresholds = ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]   # in e-
+...
+76 factor=0.23287
 ```
 as appropriate for the given analysis. The script is run as
 ```
-python3 extract_eff_res.py GAP225SQ
+python3 extract_eff_res.py
 ```
 
 **To plot the efficiencies and resolutions the scripts provided in the `plotting_scripts` folder can be used.**
