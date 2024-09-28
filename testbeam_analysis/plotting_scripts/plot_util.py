@@ -17,6 +17,7 @@ from ROOT import gPad, gStyle
 
 import sys, os, datetime, math, json, logging
 from array import array
+import csv
 
 # From ALICE collaboration editor guidelines
 def ALICEStyle(graypalette = False):
@@ -584,7 +585,7 @@ class Painter:
     self.add_text(pave, f'FWHM = {fwhm * scale:.1f}')
     pave.Draw('same')
     return resultPtr
-  def DrawHist(self, htmp, title="", option="", optStat=False, samePad=False, optGaus=False, scale=1, **kwargs):
+  def DrawHist(self, htmp, title="", option="", optStat=False, samePad=False, optGaus=False, fixRange=False, scale=1, **kwargs):
     ROOT.gStyle.SetOptStat(optStat)
     if(title == ""):
       title = htmp.GetTitle()
@@ -606,9 +607,11 @@ class Painter:
     if(htmp.ClassName().startswith('TH') and self.subPadNX * self.subPadNY >= 4):
       htmp.SetTitleSize(0.08, "XY")
       htmp.SetTitleOffset(0.8, "XY")
-    if(optGaus): 
-        tmp_gaus = self.optimise_hist_gaus(htmp, scale)
-        print(tmp_gaus)
+    if(optGaus):
+      tmp_gaus = self.optimise_hist_gaus(htmp, scale)
+      print(tmp_gaus)
+    if(fixRange):
+      htmp.GetXaxis().SetRangeUser(-0.035, 0.035)
     if(kwargs.get('optLangau') == True):
       self.optimise_hist_langau(htmp, scale)
     ROOT.gPad.SetLogx(kwargs.get('optLogX') == True)
@@ -628,3 +631,49 @@ def efficiency_simple(nsel, nall):
 def show_efficiency(nsel, nall):
   eff, error, lerr, uerr = efficiency_simple(nsel, nall)
   return f'{eff * 100:.1f}^{{+{uerr * 100:.1f}}}_{{-{lerr * 100:.1f}}} %'
+
+
+# auxiliary functions for .csv files
+def csv_to_histogram(csv_file, hist_name):
+    bin_centers = []
+    bin_contents = []
+    bin_errors = []
+    nEntries = 0
+    
+    # Open the CSV file for reading
+    with open(csv_file, 'r') as csvfile:
+        csvreader = csv.reader(csvfile)
+        next(csvreader)  # Skip the header
+        for row in csvreader:
+            bin_centers.append(float(row[0]))
+            bin_contents.append(float(row[1]))
+            bin_errors.append(float(row[2]))
+    
+    # Infer the number of bins, xmin, and xmax
+    num_bins = len(bin_centers)
+    
+    # Calculate the bin width from consecutive bin centers
+    bin_width = bin_centers[1] - bin_centers[0] if num_bins > 1 else 1
+    
+    # Calculate xmin and xmax
+    xmin = bin_centers[0] - bin_width / 2
+    xmax = bin_centers[-1] + bin_width / 2
+    
+    # Create the histogram
+    hist = ROOT.TH1F(hist_name, hist_name, num_bins, xmin, xmax)
+    
+    # Fill the histogram with the content and errors
+    for i in range(num_bins):
+        bin_index = hist.FindBin(bin_centers[i])
+        hist.SetBinContent(bin_index, bin_contents[i])
+        hist.SetBinError(bin_index, bin_errors[i])
+        nEntries+=bin_contents[i]
+
+    hist.SetEntries(nEntries)
+    
+    # Return the histogram object
+    return hist
+
+
+
+
