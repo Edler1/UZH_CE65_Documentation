@@ -1,6 +1,6 @@
 !/bin/bash
 set -e
-set -x
+# set -x
 
 
 # Philosophy: This script is the upgraded "run_tb_analysis.sh". Extra features, but backwards-compatible.
@@ -269,30 +269,30 @@ prealign_dut_source="config/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.con
 align_dut_source="config/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf" 
 analysis_source="config/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf"
 
-# check tag passed through params file matches command line tag
-ptag=$(echo `dirname "$3"` | cut -d'/' -f5)
-if [ ! ${ptag} = ${tag} ]; then 
-    echo "Tag mismatch. Please match tags passed in command line and params file."
-fi
+# # check tag passed through params file matches command line tag
+# ptag=$(echo `dirname "${params}"` | cut -d'/' -f5)
+# if [ ! ${ptag} = ${tag} ]; then 
+#     echo "Tag mismatch. Please match tags passed in command line and params file."
+# fi
 
 # redefine source files if they have been passed
-if [ -e $its3_utils_path/../`dirname "$3"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo ]; then 
-    geo_source=$its3_utils_path/../`dirname "$3"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo 
+if [ -e $its3_utils_path/../`dirname "${params}"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo ]; then 
+    geo_source=$its3_utils_path/../`dirname "${params}"`/${testbeam_alphabetic}-GAP18SQ_HV10.geo 
 fi
-if [ -e $its3_utils_path/../`dirname "$3"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
-    prealign_source=$its3_utils_path/../`dirname "$3"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+if [ -e $its3_utils_path/../`dirname "${params}"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    prealign_source=$its3_utils_path/../`dirname "${params}"`/prealign_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
 fi
-if [ -e $its3_utils_path/../`dirname "$3"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
-    align_source=$its3_utils_path/../`dirname "$3"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+if [ -e $its3_utils_path/../`dirname "${params}"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    align_source=$its3_utils_path/../`dirname "${params}"`/align_tel_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
 fi
-if [ -e $its3_utils_path/../`dirname "$3"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
-    prealign_dut_source=$its3_utils_path/../`dirname "$3"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+if [ -e $its3_utils_path/../`dirname "${params}"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    prealign_dut_source=$its3_utils_path/../`dirname "${params}"`/prealign_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
 fi
-if [ -e $its3_utils_path/../`dirname "$3"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
-    align_dut_source=$its3_utils_path/../`dirname "$3"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+if [ -e $its3_utils_path/../`dirname "${params}"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    align_dut_source=$its3_utils_path/../`dirname "${params}"`/align_dut_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
 fi
-if [ -e $its3_utils_path/../`dirname "$3"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
-    analysis_source=$its3_utils_path/../`dirname "$3"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
+if [ -e $its3_utils_path/../`dirname "${params}"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf ]; then 
+    analysis_source=$its3_utils_path/../`dirname "${params}"`/analysis_${testbeam_alphabetic}-GAP18SQ_HV10.conf 
 fi
 
 #####################################################
@@ -565,8 +565,6 @@ if ! $flag_analysis; then
         ../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
     fi
 
-    
-    
     
     
     ####################
