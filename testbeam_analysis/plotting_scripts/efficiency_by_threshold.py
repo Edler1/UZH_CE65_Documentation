@@ -3,6 +3,19 @@ import numpy as np
 import json
 import datetime
 from plot_util_mpl import draw_chip, draw_configuration, draw_preliminary
+import argparse
+
+def parseInput():
+
+    parser = argparse.ArgumentParser(description="Arg parser for Efficiency/Resolution plotting script.")
+
+    # parser.add_argument('filename', type=str, help='The file to process')
+
+
+    parser.add_argument('-a', '--approval', action='store_true', help="Set approval flag (True or False)")
+
+    args = parser.parse_args()
+    return args
 
 
 # Philosophy -> Plotting script for efficiency vs threshold. Takes .txt files with column-wise "threshold" "efficiency" "uncertainty" information. Meant to be run for a variety of pitches(15um, 18um, 22.5um) for a given process (GAP, STD, BLK).
@@ -16,7 +29,7 @@ from plot_util_mpl import draw_chip, draw_configuration, draw_preliminary
 testbeam = "SPS"
 
 # Process to be plotted (GAP, STD, BLK)
-process = "STD"
+process = "GAP"
 
 # Matrix arrangement (SQ, HSQ)
 matrix_arrangement = "SQ"
@@ -24,8 +37,16 @@ matrix_arrangement = "SQ"
 # HV applied
 hv = "10"
 
+# Parsing input for approval flag
+pass
+# If approval option is set then .json files (CHIP_PCB_VSUB_HV_TEMP_date.json) must be specified
+json_files = {"GAP15SQ" : "data/GAP15SQ_PCB19_0V_10V_15122023.json",
+        "GAP225SQ" : "data/GAP225SQ_PCB10_0V_10V_16112023.json", 
+        "STD15SQ" : "data/STD15SQ_PCB06_0V_10V_21112023.json",
+        "STD225SQ" : "data/STD225SQ_PCB18_0V_10V_13122023.json"}
+
 # .txt directory filepath (empty by default as .txt files are assumed to be in pwd)
-filepath = "/home/eduardo/Documents/Hardware/off_edits/UZH_CE65_Documentation/testbeam_analysis/ITS3utils/SPS202404/output"
+filepath = "data"
 filepath = filepath if (filepath.endswith("/") or not bool(filepath)) else filepath+"/"
 
 # Load the Okabe Ito color palette from JSON
@@ -160,6 +181,19 @@ draw_chip(ax1, pitch="15 $\mu$m, 22.5", process=process_alias[process])
 
 # Add biasing info
 draw_configuration(ax1)
+# Add biasing info
+if ((parseInput()).approval): 
+    # If approval then read config from associated .json file
+    try:
+        # Filename convention of data/CHIP_PCB_VSUB_HV_TEMP_date.json, e.g. data/GAP15SQ_PCB19_0V_10V_15122023.json
+        # Importantly, we assume biasing params are the same for different pitches
+        with open(json_files[process+"15"+matrix_arrangement], 'r') as json_file:
+            config = json.load(json_file)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"{e}\nHint: For the \"--approval\" flag a config.json file is required. Each testbeam measurement requires a separate config.json file. Please follow the naming convention above.")
+    draw_configuration(ax1, sub='AC', ac_hv=config['ac']['hv'], ac_ipmos=config['ac']['ipmos'], vsub=config['vsub'], imat=config['imat'], icol=config['icol'], voffset=config['voff'], temp=config['temp'])
+else:
+    draw_configuration(ax1)
 
 
 

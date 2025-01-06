@@ -1,7 +1,7 @@
 #!/bin/env python3
 
 # Plot preliminary results for approval
-# Slightly altered for v2
+# Altered for v2
 
 import argparse
 import os
@@ -10,11 +10,13 @@ import ROOT
 from copy import deepcopy
 from pprint import pprint
 import datetime
+import re
 
-# Binning: width, min, max
+
+# Used for --approval_debug and --approval
 database = {
+  'testbeam': 'SPS202404',
   'pitches': ['225', '15'],
-  # 'variant': ['GAP225SQ', 'GAP15SQ', 'STD225SQ', 'STD15SQ'],
   'variant': ['GAP225SQ', 'STD225SQ'],
   'GAP225SQ':{
     'template': 'GAP225SQ',
@@ -33,6 +35,8 @@ database = {
     '225':{
       'title': 'AC amp.',
       'pitch': '22.5',
+      # Only necessary for --approval option
+      'pcb': '10',
       'edge':[0, 47],
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
@@ -42,12 +46,13 @@ database = {
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'/local/ITS3utils/SPS202404/ament_tests/output/GAP225SQ/001111/analysis_SPS-GAP225SQ_173004529_240424074819_seedthr429_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/output/GAP225SQ/analysis_SPS-GAP225SQ_173004529_240424074819_seedthr429_nbh100_snr3_window.root',
       }
     },
     '15':{
       'title': 'AC amp.',
       'pitch': '15',
+      'pcb': '19',
       'edge':[0, 47],
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
@@ -57,7 +62,7 @@ database = {
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'/local/ITS3utils/SPS202404/ament_tests/output/GAP15SQ/002111/analysis_SPS-GAP15SQ_172204417_240423235612_seedthr422_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/output/GAP15SQ/analysis_SPS-GAP15SQ_172204417_240423235612_seedthr422_nbh100_snr3_window.root',
       }
     },
   },
@@ -72,25 +77,27 @@ database = {
     '225':{
       'title': 'AC amp.',
       'pitch': '22.5',
+      'pcb': '18',
       'calibration': 4.25,
       'noise':'/local/ITS3utils/SPS202404/qa/STD225SQ/SPS-STD225SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'/local/ITS3utils/SPS202404/ament_tests/output/STD225SQ/003111/analysis_SPS-STD225SQ_171145237_240422155839_seedthr425_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/output/STD225SQ/analysis_SPS-STD225SQ_171145237_240422155839_seedthr425_nbh100_snr3_window.root',
       }
     },
     '15':{
       'title': 'AC amp.',
       'pitch': '15',
+      'pcb': '06',
       'calibration': 4.15,
       'noise':'/local/ITS3utils/SPS202404/qa/STD15SQ/SPS-STD15SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
-        'file':'/local/ITS3utils/SPS202404/ament_tests/output/STD15SQ/004111/analysis_SPS-STD15SQ_172085214_240423184754_seedthr415_nbh100_snr3_window.root',
+        'file':'/local/ITS3utils/SPS202404/output/STD15SQ/analysis_SPS-STD15SQ_172085214_240423184754_seedthr415_nbh100_snr3_window.root',
       }
     },
   },
@@ -103,10 +110,12 @@ def dict_update(config : dict, template : dict):
     else:
       configNew[k] = deepcopy(v)
   return configNew
+
 for chip in database['variant']:
   chipConfig = database[chip]
   if(chip == chipConfig.get('template')): continue
   database[chip] = dict_update(chipConfig, database[chipConfig['template']])
+
 
 # Style
 HIST_Y_SCALE = 1.4
@@ -114,13 +123,6 @@ color_vars = {}
 color_fill = {}
 plot_util.COLOR_SET = plot_util.COLOR_SET_ALICE
 
-# # Load colors from okabe_ito file
-# with open("okabe_ito.json", 'r') as file:
-#     color_dict = json.load(file)
-
-# Permute dict to use desired colours in order
-# permutation_order = [
-# shuffled_dict = {key: data_dict[key] for key in np.array(list(keys))[permute]}
 
 # Choose colours for the different "pitches"
 pitch_colors = {"225" : 4, "18" : 5, "15" : 6}
@@ -168,15 +170,23 @@ def draw_configuration(painter : plot_util.Painter, pave, sub='all', size=0.03):
     painter.add_text(pave, 'I_{nmos} = 1 #muA, V_{reset} = 3.3 V', size=size)
 
 # Noise
-def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225'):
+def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225', mode='approval_debug', approval_prefix=''):
   """Noise distribution of each matrix
   """
   painter.NextPad()
   painter.pageName = f'Noise - {variant}'
+  histNameSource = f'hnoisepl1'
   chip_vars = database[variant]
+  print('XXXXXXXXXX')
+  print(chip_vars[pitch]['pcb'])
   chip_setup = chip_vars['setup']
-  noiseFile = ROOT.TFile.Open(chip_vars[pitch]['noise'])
-  hNoiseMap = painter.new_obj(noiseFile.Get('hnoisepl1').Clone(f'hNoiseMap_{variant}'))
+  chipname=re.sub(r'\d+', pitch, variant)
+  if(mode=="approval"):
+    hNoiseMap = painter.new_obj(plot_util.csv_to_histogram_2d('data/'+chipname+'_PCB'+chip_vars[pitch]['pcb']+'_'+str(chip_setup['PSUB'])+'V_'+str(chip_setup['HV'])+'V_'+database['testbeam']+'_'+histNameSource+'.csv', histNameSource).Clone(f'hNoiseMap_{variant}'))
+    # breakpoint()
+  else:
+    noiseFile = ROOT.TFile.Open(chip_vars[pitch]['noise'])
+    hNoiseMap = painter.new_obj(noiseFile.Get('hnoisepl1').Clone(f'hNoiseMap_{variant}'))
   hNoiseMapENC = painter.new_obj(hNoiseMap.Clone(f'hNoiseMapENC_{variant}'))
   hNoiseMapENC.UseCurrentStyle()
   # lgd = painter.new_obj(ROOT.TLegend(0.35, 0.55, 0.5, 0.7))
@@ -221,10 +231,6 @@ def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225'):
   draw_configuration(painter, ptxt)
   ptxt.Draw('same')
 
-  #painter.add_text(ptxt,
-    #f'HV-AC = {chip_setup["HV"]}, V_{{psub}} = {chip_setup["PSUB"]}, V_{{pwell}} = {chip_setup["PWELL"]} (V)',
-    #size=0.03)
-  # ptxt.Draw('same')
   # Noise Map - ENC
   hNoiseMapENC.UseCurrentStyle()
   hNoiseMapENC.SetTitle('Noise map ENC;Column (pixel);Row (pixel);ENC (e^{-})')
@@ -243,9 +249,9 @@ def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225'):
   padOverlap.Update()
   # Output
   painter.save_obj([hNoiseMap, hNoiseMapENC])
-  painter.NextPage(f'NoiseDistribution_{variant}')
+  painter.NextPage(f'{approval_prefix}NoiseDistribution_{chipname}')
 
-def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=False):
+def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=False, mode="approval_debug", approval_prefix=''):
   """Cluster charge plot for all variants and sub-matrix
   """
   if(optSeed):
@@ -270,13 +276,18 @@ def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=Fals
   qcdb = {'MPV':[]}
   for chip in database['variant']:
     chip_vars = database[chip]
+    chip_setup = chip_vars['setup']
     for pit in database['pitches']:
       pit_vars = chip_vars[pit]
       corry_vars = pit_vars['result']
-      resultFile = ROOT.TFile.Open(corry_vars['file'])
-      dirAna = resultFile.Get('AnalysisCE65')
-      dirAna = dirAna.Get('CE65_6')
-      hChargeRaw = painter.new_obj(dirAna.Get(histNameSource).Clone(f'{histNameRaw}_{chip}_{pit}'))
+      if(mode=="approval"):
+        chipname=re.sub(r'\d+', pit, chip)
+        hChargeRaw = painter.new_obj(plot_util.csv_to_histogram('data/'+chipname+'_PCB'+chip_vars[pit]['pcb']+'_'+str(chip_setup['PSUB'])+'V_'+str(chip_setup['HV'])+'V_'+database['testbeam']+'_'+histNameSource+'.csv', histNameSource).Clone(f'{histNameRaw}_{chip}_{pit}'))
+      else:
+        resultFile = ROOT.TFile.Open(corry_vars['file'])
+        dirAna = resultFile.Get('AnalysisCE65')
+        dirAna = dirAna.Get('CE65_6')
+        hChargeRaw = painter.new_obj(dirAna.Get(histNameSource).Clone(f'{histNameRaw}_{chip}_{pit}'))
       hChargeRaw.SetDirectory(0x0)
       histName = f'{histNameCharge}_{chip}_{pit}'
       if optNorm:
@@ -326,7 +337,7 @@ def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=Fals
       result.Print() # DEBUG
         # Legend
       lgd.AddEntry(hCharge, f'{chip_vars["process"]} ({pit_vars["pitch"]} #mum)')
-      resultFile.Close()
+      if(mode!="approval"): resultFile.Close()
       painter.save_obj([hChargeRaw, hCharge, fit])
   # Pad style
   painter.primaryHist.GetYaxis().SetRangeUser(0, HIST_Y_SCALE * histMax)
@@ -353,10 +364,11 @@ def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=Fals
   ptxt.Draw('same')
   if optSeed:
     return qcdb
-  painter.NextPage(f'{painter.pageName}_' + '_'.join(database['variant']))
 
-def plot_seed_charge(painter : plot_util.Painter, optNorm=False):
-  qcdb = plot_cluster_charge(painter, optSeed=True, optNorm=optNorm)
+  painter.NextPage(f'{approval_prefix}{painter.pageName}_' + '_'.join([re.sub(r'\d+', '', variant) for variant in database['variant']]))
+
+def plot_seed_charge(painter : plot_util.Painter, optNorm=False, mode="approval_debug", approval_prefix=''):
+  qcdb = plot_cluster_charge(painter, optSeed=True, optNorm=optNorm, mode="approval_debug")
   mpvCluster = []
   # Cluster charge MPV
   for chip in database['variant']:
@@ -374,10 +386,10 @@ def plot_seed_charge(painter : plot_util.Painter, optNorm=False):
   lgd.Draw('same')
   #
   painter.pageName = 'SeedCharge' + ('Norm' if optNorm else '')
-  painter.NextPage(f'{painter.pageName}_' + '_'.join(database['variant']))
+  painter.NextPage(f'{approval_prefix}{painter.pageName}_' + '_'.join([re.sub(r'\d+', '', variant) for variant in database['variant']]))
   return qcdb
 
-def plot_cluster_shape(painter : plot_util.Painter, pitch='225'):
+def plot_cluster_shape(painter : plot_util.Painter, pitch='225', mode="approval_debug", approval_prefix=''):
   """Cluster distribution in a window around seed
   """
   pit = pitch
@@ -385,15 +397,22 @@ def plot_cluster_shape(painter : plot_util.Painter, pitch='225'):
     lgd = painter.new_legend(0.55, 0.38, 0.82, 0.43)
     # lgd = painter.new_legend(1.62, 0.60, 1.82, 0.65)
     painter.pageName = f'ClusterShape - {chip}_{pit}'
+    histNameSource = f'clusterShape_ChargeRatio_Accumulated'
     chip_vars = database[chip]
     chip_setup = chip_vars['setup']
     pit_vars = chip_vars[pit]
     corry_vars = pit_vars['result']
-    resultFile = ROOT.TFile.Open(corry_vars['file'])
-    dirAna = resultFile.Get('AnalysisCE65')
-    dirAna = dirAna.Get('CE65_6')
-    dirCluster = dirAna.Get('cluster')
-    hRatio = painter.new_obj(dirCluster.Get("clusterShape_ChargeRatio_Accumulated").Clone(f'hClusterChargeRatio_{chip}_{pit}'))
+    chipname=re.sub(r'\d+', pit, chip)
+    if(mode=="approval"):
+      hRatio = painter.new_obj(plot_util.csv_to_histogram_2d('data/'+chipname+'_PCB'+chip_vars[pitch]['pcb']+'_'+str(chip_setup['PSUB'])+'V_'+str(chip_setup['HV'])+'V_'+database['testbeam']+'_'+histNameSource+'.csv', histNameSource).Clone(f'hClusterChargeRatio_{chip}_{pit}'))
+      # breakpoint()
+    else:
+      resultFile = ROOT.TFile.Open(corry_vars['file'])
+      dirAna = resultFile.Get('AnalysisCE65')
+      dirAna = dirAna.Get('CE65_6')
+      dirCluster = dirAna.Get('cluster')
+      hRatio = painter.new_obj(dirCluster.Get("clusterShape_ChargeRatio_Accumulated").Clone(f'hClusterChargeRatio_{chip}_{pit}'))
+
     hRatio.UseCurrentStyle()
     hRatio.SetYTitle('#it{R}_{n} (#bf{#scale[2.5]{#lower[0.35]{#Sigma}}} #it{q}_{n} charge ratio)')
     hRatio.SetXTitle('Number of pixels in cluster')
@@ -443,9 +462,10 @@ def plot_cluster_shape(painter : plot_util.Painter, pitch='225'):
 
     # Output
     painter.save_obj(hRatio)
-    painter.NextPage(f'ClusterChargeRatioRn_{chip}')
+    painter.padEmpty = False
+    painter.NextPage(f'{approval_prefix}ClusterChargeRatioRn_{chipname}')
   # Draw
-def plot_tracking_residual(painter : plot_util.Painter, axis='X'):
+def plot_tracking_residual(painter : plot_util.Painter, axis='X', mode="approval_debug", approval_prefix=''):
   """
   """
   histMax = 0
@@ -460,17 +480,26 @@ def plot_tracking_residual(painter : plot_util.Painter, axis='X'):
   lgd = painter.new_obj(ROOT.TLegend(0.57, 0.18, 0.90, 0.58))
   for chip in database['variant']:
     chip_vars = database[chip]
+    chip_setup = chip_vars['setup']
     for pit in database['pitches']:
       pit_vars = chip_vars[pit]
       corry_vars = pit_vars['result']
-      resultFile = ROOT.TFile.Open(corry_vars['file'])
-      dirAna = resultFile.Get('AnalysisCE65')
-      dirAna = dirAna.Get('CE65_6')
-      dirTracking = dirAna.Get('global_residuals')
-      hTrack = painter.new_obj(dirTracking.Get(histNameSource).Clone(f'{histNameSource}_{chip}_{pit}'))
+      if(mode=="approval"):
+        chipname=re.sub(r'\d+', pit, chip)
+        hTrack = painter.new_obj(plot_util.csv_to_histogram('data/'+chipname+'_PCB'+chip_vars[pit]['pcb']+'_'+str(chip_setup['PSUB'])+'V_'+str(chip_setup['HV'])+'V_'+database['testbeam']+'_'+histNameSource+'.csv', histNameSource).Clone(f'{histNameSource}_{chip}_{pit}'))
+        # breakpoint()
+      else:
+        resultFile = ROOT.TFile.Open(corry_vars['file'])
+        dirAna = resultFile.Get('AnalysisCE65')
+        dirAna = dirAna.Get('CE65_6')
+        dirTracking = dirAna.Get('global_residuals')
+        hTrack = painter.new_obj(dirTracking.Get(histNameSource).Clone(f'{histNameSource}_{chip}_{pit}'))
+
+
+
       hTrack.UseCurrentStyle()
       hTrack.SetDirectory(0x0)
-      resultFile.Close()
+      if(mode!="approval"): resultFile.Close()
       # Norm
       hTrack.Rebin(int(1. / hTrack.GetBinWidth(1)))
       hTrack.SetYTitle(f'Entriess / {hTrack.GetBinWidth(1)} #mum')
@@ -514,38 +543,44 @@ def plot_tracking_residual(painter : plot_util.Painter, axis='X'):
   draw_configuration(painter, ptxt)
 
   ptxt.Draw('same')
-  painter.NextPage(f'TrackingResiduals{axis}_' + '_'.join(database['variant']))
+  painter.NextPage(f'{approval_prefix}TrackingResiduals{axis}_' + '_'.join([re.sub(r'\d+', '', variant) for variant in database['variant']]))
 
-def plot_preliminary(prefix='output/preliminary', all=False, **kwargs):
+def plot_preliminary(prefix='plots/preliminary', all=False, mode="approval_debug", approval_prefix="", **kwargs):
   plot_util.ALICEStyle()
   outputDir = os.path.dirname(prefix)
   if(all):
-    os.system(f'mkdir -p {outputDir}/plot')
+    os.system(f'mkdir -p {outputDir}')
   painter = plot_util.Painter(
     printer=f'{prefix}.pdf',
     winX=1600, winY=1000, nx=1, ny=1,
-    showGrid=True, printAll=all, printDir=f'{outputDir}/plot', showPageNo=True,
-    saveROOT=True)
+    showGrid=True, printAll=all, printDir=f'{outputDir}', showPageNo=True,
+    saveROOT=False)
   painter.PrintCover('CE-65v2 Preliminary')
-  plot_noise(painter,'GAP225SQ', '225')
-  plot_noise(painter,'GAP225SQ', '15')
-  plot_noise(painter,'STD225SQ', '225')
-  plot_noise(painter,'STD225SQ', '15')
-  plot_cluster_charge(painter)
-  plot_cluster_charge(painter, optNorm=True)
-  plot_seed_charge(painter)
-  plot_seed_charge(painter, optNorm=True)
-  plot_cluster_shape(painter, '225')
-  plot_tracking_residual(painter,axis='X')
-  plot_tracking_residual(painter,axis='Y')
+  plot_noise(painter,'GAP225SQ', '225', mode=mode, approval_prefix=approval_prefix)
+  plot_noise(painter,'GAP225SQ', '15', mode=mode, approval_prefix=approval_prefix)
+  plot_noise(painter,'STD225SQ', '225', mode=mode, approval_prefix=approval_prefix)
+  plot_noise(painter,'STD225SQ', '15', mode=mode, approval_prefix=approval_prefix)
+  plot_cluster_charge(painter, mode=mode, approval_prefix=approval_prefix)
+  plot_cluster_charge(painter, optNorm=True, mode=mode, approval_prefix=approval_prefix)
+  plot_cluster_shape(painter, '225', mode=mode, approval_prefix=approval_prefix)
+  plot_tracking_residual(painter, axis='X', mode=mode, approval_prefix=approval_prefix)
   painter.PrintBackCover('-')
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser('Preliminary pltos for multiple variants and sub-matrix')
-  parser.add_argument('-p','--prefix',default='output/preliminary_v2', help='Prefix of output fils, generate files .pdf .root and plot/')
+  parser = argparse.ArgumentParser('Preliminary plots for multiple variants and sub-matrix')
+  parser.add_argument('-p','--prefix',default='plots/preliminary_v2', help='Prefix of output fils, generate files .pdf .root and plot/')
   parser.add_argument('-a','--all', default=False, action='store_true', help='Option to save all figures in .eps and .pdf individually')
+
+  # Adding options for approval, approval_debug, and lab
+  group = parser.add_mutually_exclusive_group(required=False)
+  group.add_argument('--approval', action='store_const', const='approval', dest='mode', help='Set approval mode')
+  group.add_argument('--approval_debug', action='store_const', const='approval_debug', dest='mode', help='Set approval_debug mode')
+  parser.set_defaults(mode='approval_debug')  
+
+  parser.add_argument('-x','--approval_prefix', default='', help='Approval-only prefix to harmonize plots')
+
   args, unknown = parser.parse_known_args()
   if unknown:
     print(f'[+] Unknown aruments : {unknown}')
-  plot_preliminary(args.prefix, args.all)
-  #pprint(database)
+  
+  plot_preliminary(args.prefix, args.all, args.mode, args.approval_prefix)

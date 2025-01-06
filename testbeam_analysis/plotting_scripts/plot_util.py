@@ -675,5 +675,53 @@ def csv_to_histogram(csv_file, hist_name):
     return hist
 
 
+def csv_to_histogram_2d(csv_file, hist_name):
+    bin_centers_x = []
+    bin_centers_y = []
+    bin_contents = []
+    bin_errors = []
+    nEntries = 0
+    
+    # Open the CSV file for reading
+    with open(csv_file, 'r') as csvfile:
+        csvreader = csv.reader(csvfile)
+        next(csvreader)  # Skip the header
+        for row in csvreader:
+            bin_centers_x.append(float(row[0]))
+            bin_centers_y.append(float(row[1]))
+            bin_contents.append(float(row[2]))
+            bin_errors.append(float(row[3]))
+
+    # Infer the number of bins for x and y
+    num_bins_x = len(set(bin_centers_x))
+    num_bins_y = len(set(bin_centers_y))
+
+    # Calculate the bin widths from consecutive bin centers
+    bin_width_x = bin_centers_x[num_bins_y] - bin_centers_x[0] if num_bins_x > 1 else 1
+    bin_width_y = bin_centers_y[1] - bin_centers_y[0] if num_bins_y > 1 else 1
+
+
+    # Calculate xmin, xmax, ymin, ymax
+    xmin = min(bin_centers_x) - bin_width_x / 2
+    xmax = max(bin_centers_x) + bin_width_x / 2
+    ymin = min(bin_centers_y) - bin_width_y / 2
+    ymax = max(bin_centers_y) + bin_width_y / 2
+
+
+    # Create the 2D histogram
+    hist = ROOT.TH2F(hist_name, hist_name, num_bins_x, xmin, xmax, num_bins_y, ymin, ymax)
+
+    # Fill the histogram with the content and errors
+    for i in range(len(bin_centers_x)):
+        bin_index_x = hist.GetXaxis().FindBin(bin_centers_x[i])
+        bin_index_y = hist.GetYaxis().FindBin(bin_centers_y[i])
+        hist.SetBinContent(bin_index_x, bin_index_y, bin_contents[i])
+        hist.SetBinError(bin_index_x, bin_index_y, bin_errors[i])
+        nEntries += bin_contents[i]
+
+    hist.SetEntries(nEntries)
+
+    # Return the histogram object
+    return hist
 
 
