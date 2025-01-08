@@ -98,19 +98,19 @@ for line in f4:
     chip_225um_err_effs.append(chip_225um_err_eff_value)
 f4.close()
 
-# f5 = open(f'{filepath}{testbeam}_{process}18{matrix_arrangement}_HV{hv}_adc_eff_err.txt', 'r')  # We need to re-open the file
-# for line in f5:
-#     line = line.strip()
-#     columns = line.split()
-#     # print(columns)
-#     chip_18um_adc_value = float(columns[0])
-#     chip_18um_charge_in_e_value = chip_18um_adc_value
-#     chip_18um_eff_value = float(columns[1]) # * 100.0
-#     chip_18um_err_eff_value = float(columns[2]) # * 100.0
-#     chip_18um_charge_in_es.append(chip_18um_charge_in_e_value)
-#     chip_18um_effs.append(chip_18um_eff_value)
-#     chip_18um_err_effs.append(chip_18um_err_eff_value)
-# f5.close()
+f5 = open(f'{filepath}{testbeam}_{process}18{matrix_arrangement}_HV{hv}_adc_eff_err.txt', 'r')  # We need to re-open the file
+for line in f5:
+    line = line.strip()
+    columns = line.split()
+    # print(columns)
+    chip_18um_adc_value = float(columns[0])
+    chip_18um_charge_in_e_value = chip_18um_adc_value
+    chip_18um_eff_value = float(columns[1]) # * 100.0
+    chip_18um_err_eff_value = float(columns[2]) # * 100.0
+    chip_18um_charge_in_es.append(chip_18um_charge_in_e_value)
+    chip_18um_effs.append(chip_18um_eff_value)
+    chip_18um_err_effs.append(chip_18um_err_eff_value)
+f5.close()
 
 f6 = open(f'{filepath}{testbeam}_{process}15{matrix_arrangement}_HV{hv}_adc_eff_err.txt', 'r')  # We need to re-open the file
 for line in f6:
@@ -153,7 +153,7 @@ chip_15um_charge_in_es = chip_15um_charge_in_es[(chip_15um_charge_in_es>50)&(chi
 
 
 ax1.errorbar(chip_225um_charge_in_es, chip_225um_effs, yerr=chip_225um_err_effs, color=colors[3], label=label_dict[process]+r' (22.5 $\mu$m)', marker = '*', markersize=8,linestyle='-')
-# ax1.errorbar(chip_18um_charge_in_es, chip_18um_effs, yerr=chip_18um_err_effs, color=colors[5], label=label_dict[process]+r' (22.5 $\mu$m)', marker = '^', markersize=8,linestyle='-')
+ax1.errorbar(chip_18um_charge_in_es, chip_18um_effs, yerr=chip_18um_err_effs, color=colors[5], label=label_dict[process]+r' (18 $\mu$m)', marker = '^', markersize=8,linestyle='-')
 ax1.errorbar(chip_15um_charge_in_es, chip_15um_effs, yerr=chip_15um_err_effs, color=colors[4], label=label_dict[process]+r' (15 $\mu$m)', marker = 's', markersize=8,linestyle='-')
 
 ax1.plot([0, upper_e_bound], [99, 99], color='gray', linestyle='--', label='99% Efficiency')
