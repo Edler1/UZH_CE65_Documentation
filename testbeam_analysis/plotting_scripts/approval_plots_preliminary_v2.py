@@ -16,7 +16,10 @@ import re
 # Used for --approval_debug and --approval
 database = {
   'testbeam': 'SPS202404',
-  'pitches': ['225', '15'],
+  'pitches': ['225', '15', '18'],
+  # 'pitches': ['225', '15'],
+  # 'pitches': ['18', '15'],
+  # 'pitches': ['225', '18'],
   'variant': ['GAP225SQ', 'STD225SQ'],
   'GAP225SQ':{
     'template': 'GAP225SQ',
@@ -41,12 +44,15 @@ database = {
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
       'calibration': 4.29,
+      # 'calibration': 4.5,
       'noise':'/local/ITS3utils/SPS202404/qa/GAP225SQ/SPS-GAP225SQ_HV10-noisemap.root',
+      # 'noise':'/local/ITS3utils/SPS202404/qa/GAP225HSQ/SPS-GAP225HSQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
         'file':'/local/ITS3utils/SPS202404/output/GAP225SQ/analysis_SPS-GAP225SQ_173004529_240424074819_seedthr429_nbh100_snr3_window.root',
+        # 'file':'/local/ITS3utils/SPS202404/output/GAP225HSQ/analysis_SPS-GAP225HSQ_166040437_240420040442_seedthr429_nbh100_snr3_window.root',
       }
     },
     '15':{
@@ -57,12 +63,32 @@ database = {
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
       'calibration': 4.22,
+      # 'calibration': 4.5,
       'noise':'/local/ITS3utils/SPS202404/qa/GAP15SQ/SPS-GAP15SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
         'file':'/local/ITS3utils/SPS202404/output/GAP15SQ/analysis_SPS-GAP15SQ_172204417_240423235612_seedthr422_nbh100_snr3_window.root',
+      }
+    },
+    '18':{
+      'title': 'AC amp.',
+      'pitch': '18',
+      'pcb': '02',
+      'edge':[0, 47],
+      'binning_noise':[5, 0, 400],
+      'binning_charge':[100, 0, 15000],
+      'calibration': 4.61,
+      # 'calibration': 4.5,
+      'noise':'/local/ITS3utils/SPS202404/qa/GAP18SQ/SPS-GAP18SQ_HV10-noisemap.root',
+      # 'noise':'/local/ITS3utils/SPS202404/qa/GAP18HSQ/SPS-GAP18HSQ_HV10-noisemap.root',
+      'result':{
+        'seed_snr': 3,
+        'seed_charge': 461,
+        'cluster_charge': 461,
+        'file':'/local/ITS3utils/SPS202404/output/GAP18SQ/analysis_SPS-GAP18SQ_99_99_seedthr461_nbh100_snr3_window.root',
+        # 'file':'/local/ITS3utils/SPS202404/output/GAP18HSQ/analysis_SPS-GAP18HSQ_171174033_240422174039_seedthr429_nbh100_snr3_window.root',
       }
     },
   },
@@ -79,12 +105,15 @@ database = {
       'pitch': '22.5',
       'pcb': '18',
       'calibration': 4.25,
+      # 'calibration': 4.5,
       'noise':'/local/ITS3utils/SPS202404/qa/STD225SQ/SPS-STD225SQ_HV10-noisemap.root',
+      # 'noise':'/local/ITS3utils/SPS202404/qa/STD225HSQ/SPS-STD225HSQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
         'file':'/local/ITS3utils/SPS202404/output/STD225SQ/analysis_SPS-STD225SQ_171145237_240422155839_seedthr425_nbh100_snr3_window.root',
+        # 'file':'/local/ITS3utils/SPS202404/output/STD225HSQ/analysis_SPS-STD225HSQ_166083611_240420201733_seedthr429_nbh100_snr3_window.root',
       }
     },
     '15':{
@@ -92,12 +121,29 @@ database = {
       'pitch': '15',
       'pcb': '06',
       'calibration': 4.15,
+      # 'calibration': 4.5,
       'noise':'/local/ITS3utils/SPS202404/qa/STD15SQ/SPS-STD15SQ_HV10-noisemap.root',
       'result':{
         'seed_snr': 3,
         'seed_charge': 435,
         'cluster_charge': 435,
         'file':'/local/ITS3utils/SPS202404/output/STD15SQ/analysis_SPS-STD15SQ_172085214_240423184754_seedthr415_nbh100_snr3_window.root',
+      }
+    },
+    '18':{
+      'title': 'AC amp.',
+      'pitch': '18',
+      'pcb': '23',
+      'calibration': 4.74,
+      # 'calibration': 4.5,
+      'noise':'/local/ITS3utils/SPS202404/qa/STD18SQ/SPS-STD18SQ_HV10-noisemap.root',
+      # 'noise':'/local/ITS3utils/SPS202404/qa/STD18HSQ/SPS-STD18HSQ_HV10-noisemap.root',
+      'result':{
+        'seed_snr': 3,
+        'seed_charge': 474,
+        'cluster_charge': 474,
+        'file':'/local/ITS3utils/SPS202404/output/STD18SQ/analysis_SPS-STD18SQ_99_99_seedthr474_nbh100_snr3_window.root',
+        # 'file':'/local/ITS3utils/SPS202404/output/STD18HSQ/analysis_SPS-STD18HSQ_172063406_240423063412_seedthr429_nbh100_snr3_window.root',
       }
     },
   },
@@ -558,12 +604,19 @@ def plot_preliminary(prefix='plots/preliminary', all=False, mode="approval_debug
   painter.PrintCover('CE-65v2 Preliminary')
   plot_noise(painter,'GAP225SQ', '225', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'GAP225SQ', '15', mode=mode, approval_prefix=approval_prefix)
+  plot_noise(painter,'GAP225SQ', '18', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'STD225SQ', '225', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'STD225SQ', '15', mode=mode, approval_prefix=approval_prefix)
+  plot_noise(painter,'STD225SQ', '18', mode=mode, approval_prefix=approval_prefix)
   plot_cluster_charge(painter, mode=mode, approval_prefix=approval_prefix)
   plot_cluster_charge(painter, optNorm=True, mode=mode, approval_prefix=approval_prefix)
+  plot_seed_charge(painter, mode=mode, approval_prefix=approval_prefix)
+  plot_seed_charge(painter, optNorm=True, mode=mode, approval_prefix=approval_prefix)
   plot_cluster_shape(painter, '225', mode=mode, approval_prefix=approval_prefix)
+  plot_cluster_shape(painter, '15', mode=mode, approval_prefix=approval_prefix)
+  plot_cluster_shape(painter, '18', mode=mode, approval_prefix=approval_prefix)
   plot_tracking_residual(painter, axis='X', mode=mode, approval_prefix=approval_prefix)
+  plot_tracking_residual(painter, axis='Y', mode=mode, approval_prefix=approval_prefix)
   painter.PrintBackCover('-')
 
 if __name__ == '__main__':
