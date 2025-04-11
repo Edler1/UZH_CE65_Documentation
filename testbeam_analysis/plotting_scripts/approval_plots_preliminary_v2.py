@@ -16,8 +16,8 @@ import re
 # Used for --approval_debug and --approval
 database = {
   'testbeam': 'SPS202404',
-  'pitches': ['225', '15', '18'],
-  # 'pitches': ['225', '15'],
+  # 'pitches': ['225', '15', '18'],
+  'pitches': ['225', '15'],
   # 'pitches': ['18', '15'],
   # 'pitches': ['225', '18'],
   'variant': ['GAP225SQ', 'STD225SQ'],
@@ -257,6 +257,7 @@ def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225', mod
         hNoiseMapENC.SetBinContent(ix+1, iy+1, enc)
     if(hsub.GetMaximum() > histMax):
       histMax = hsub.GetMaximum()
+    print("Noise in ADUs ->", hsub.GetMean()*vars['calibration'])
     painter.DrawHist(hsub, samePad=True)
     painter.save_obj(hsub)
   painter.primaryHist.GetYaxis().SetRangeUser(0, HIST_Y_SCALE * histMax)
@@ -604,17 +605,17 @@ def plot_preliminary(prefix='plots/preliminary', all=False, mode="approval_debug
   painter.PrintCover('CE-65v2 Preliminary')
   plot_noise(painter,'GAP225SQ', '225', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'GAP225SQ', '15', mode=mode, approval_prefix=approval_prefix)
-  plot_noise(painter,'GAP225SQ', '18', mode=mode, approval_prefix=approval_prefix)
+  # plot_noise(painter,'GAP225SQ', '18', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'STD225SQ', '225', mode=mode, approval_prefix=approval_prefix)
   plot_noise(painter,'STD225SQ', '15', mode=mode, approval_prefix=approval_prefix)
-  plot_noise(painter,'STD225SQ', '18', mode=mode, approval_prefix=approval_prefix)
+  # plot_noise(painter,'STD225SQ', '18', mode=mode, approval_prefix=approval_prefix)
   plot_cluster_charge(painter, mode=mode, approval_prefix=approval_prefix)
   plot_cluster_charge(painter, optNorm=True, mode=mode, approval_prefix=approval_prefix)
   plot_seed_charge(painter, mode=mode, approval_prefix=approval_prefix)
   plot_seed_charge(painter, optNorm=True, mode=mode, approval_prefix=approval_prefix)
   plot_cluster_shape(painter, '225', mode=mode, approval_prefix=approval_prefix)
   plot_cluster_shape(painter, '15', mode=mode, approval_prefix=approval_prefix)
-  plot_cluster_shape(painter, '18', mode=mode, approval_prefix=approval_prefix)
+  # plot_cluster_shape(painter, '18', mode=mode, approval_prefix=approval_prefix)
   plot_tracking_residual(painter, axis='X', mode=mode, approval_prefix=approval_prefix)
   plot_tracking_residual(painter, axis='Y', mode=mode, approval_prefix=approval_prefix)
   painter.PrintBackCover('-')

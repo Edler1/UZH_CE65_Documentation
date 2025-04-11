@@ -116,6 +116,11 @@ snr_neighbor_analysis="3"
 method_alignment="cluster"
 method_analysis="window"
 
+# Only for digitized_window
+method_analysis_nbits=4
+method_analysis_offset=0
+method_analysis_upperBound=10000
+
 
 niter_prealign_tel=1
 niter_align_tel=1
@@ -536,8 +541,15 @@ sed -i "s/thresholdSNR_seed.*$/thresholdSNR_seed = ${snr_seed_analysis}/g" confi
 # set thresholdSNR_neighbor
 sed -i "s/thresholdSNR_neighbor.*$/thresholdSNR_neighbor = ${snr_neighbor_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
 
+
 # set method
-sed -i "s/^method=cluster.*$/method = ${method_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+# if [ ${method_analysis} == "digitized_window" ]; then
+if [[ "${method_analysis}" == "digitized_window" || "${method_analysis}" == "digitized_cluster" ]]; then
+    sed -i "s/^method=cluster.*$/method=${method_analysis}\nmethod_nbits=${method_analysis_nbits}\nmethod_offset=${method_analysis_offset}\nmethod_upperBound=${method_analysis_upperBound}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+else
+    sed -i "s/^method=cluster.*$/method=${method_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
+fi
+
 
 # set method
 sed -i "s/^spatial_cut_abs=.*$/spatial_cut_abs=${spatial_cut_abs_analysis}/g" config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -564,6 +576,7 @@ if ! $flag_analysis; then
     if [[ ! -f "qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap.root" ]]; then
         ../eudaq/analog_qa_ce65v2.py qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noise-qa.root -o qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap
     fi
+
 
     
     

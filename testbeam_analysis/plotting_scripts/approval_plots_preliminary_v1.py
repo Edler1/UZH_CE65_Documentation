@@ -20,7 +20,8 @@ database = {
   # 'variant': ['C4'],
   'A4':{
     'template': 'B4',
-    'process': 'std',
+    'process': 'Standard',
+    'pitch': '15',
     'binning_seedChargeENC':[25, 0, 3100],
     'noise':'/local/ITS3utils/PS202205/qa/A4/PS-A4_HV10-noisemap.root',
     'AC':{
@@ -56,7 +57,8 @@ database = {
     'template': 'B4',
     'PIXEL_NX': 64,
     'PIXEL_NY': 32,
-    'process': 'mod_gap',
+    'process': 'Modified w/ Gap',
+    'pitch': '15',
     'split': 4,
     'setup':{
       'HV': 10,
@@ -111,7 +113,8 @@ database = {
     'template': 'B4',
     'PIXEL_NX': 64,
     'PIXEL_NY': 32,
-    'process': 'mod_gap',
+    'process': 'Modified',
+    'pitch': '15',
     'split': 4,
     'setup':{
       'HV': 10,
@@ -173,9 +176,10 @@ database = {
   },
   'D4':{
     'template': 'B4',
-    'PIXEL_NX': 64,
+    'PIXEL_NX': 48,
     'PIXEL_NY': 32,
-    'process': 'mod_gap',
+    'process': 'Standard',
+    'pitch': '25',
     'split': 4,
     'setup':{
       'HV': 10,
@@ -207,8 +211,10 @@ database = {
       'edge':[16, 31],
       # # quick_spectra
       # 'calibration': 4.59,
-      # matrix 3x3 --> Necessary due to massive charge sharing
-      'calibration': 5.37,
+      # matrix 3x3 
+      # 'calibration': 5.37,
+      # matrix 5x5 --> Necessary due to massive charge sharing
+      'calibration': 5.88,
       'binning_noise':[5, 0, 400],
       'binning_charge':[100, 0, 15000],
       'result':{
@@ -324,6 +330,7 @@ def plot_noise(painter : plot_util.Painter, variant='B4'):
         hNoiseMapENC.SetBinContent(ix+1, iy+1, enc)
     if(hsub.GetMaximum() > histMax):
       histMax = hsub.GetMaximum()
+    print("Noise in ADUs ->", hsub.GetMean()*vars['calibration'])
     painter.DrawHist(hsub, samePad=True)
     painter.save_obj(hsub)
   painter.primaryHist.GetYaxis().SetRangeUser(0, HIST_Y_SCALE * histMax)
@@ -332,9 +339,12 @@ def plot_noise(painter : plot_util.Painter, variant='B4'):
   lgd.Draw('same')
   # Text
   plot_alice(painter,test='lab')
-  ptxt = painter.draw_text(0.65, 0.65, 0.95, 0.92)
+  #ptxt = painter.draw_text(0.65, 0.65, 0.95, 0.92)
+  ptxt = painter.draw_text(0.62, 0.60, 0.95, 0.93)
   painter.add_text(ptxt, f'Chip : CE65 (MLR1)')
-  painter.add_text(ptxt, f'Process : {chip_vars["process"]} (split {chip_vars["split"]})')
+  # painter.add_text(ptxt, f'Process : {chip_vars["process"]} (split {chip_vars["split"]})')
+  painter.add_text(ptxt, f'Process : {chip_vars["process"]}')
+  painter.add_text(ptxt, f'Pitch : {chip_vars["pitch"]} #mum')
   draw_configuration(painter, ptxt)
   #painter.add_text(ptxt,
     #f'HV-AC = {chip_setup["HV"]}, V_{{psub}} = {chip_setup["PSUB"]}, V_{{pwell}} = {chip_setup["PWELL"]} (V)',

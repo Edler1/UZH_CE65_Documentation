@@ -8,6 +8,9 @@ set -e
 
 # Choose chip on which to scan thresholds
 chip="GAP225SQ"
+if [[ -n "$1" ]]; then 
+    chip="$1"
+fi
 
 
 # Calibration factors from
@@ -18,6 +21,11 @@ factors["GAP225SQ"]=0.23287
 factors["GAP15SQ"]=0.23716
 factors["STD225SQ"]=0.23528
 factors["STD15SQ"]=0.24094
+# Assuming same calib factors for HSQ since lab analysis not done
+factors["GAP225HSQ"]=0.23287
+factors["GAP18HSQ"]=0.23287
+factors["STD225HSQ"]=0.23528
+factors["STD18HSQ"]=0.23528
 
 factor=${factors["${chip}"]}
 
