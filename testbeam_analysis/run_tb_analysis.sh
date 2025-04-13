@@ -317,7 +317,11 @@ cp ${geo_source} "geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_
 if [ "${geo_source}" == "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" ]; then
 
     # replace masks into chip subdir
-    sed -i "s#\.\./\.\./\.\./DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+    if [ "${testbeam}" == "DESY202311" ]; then
+        sed -i "s#/local/ITS3Utils/DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+    else
+        sed -i "s#\.\./\.\./\.\./DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+    fi
 
     # add hv to mask names
     sed -i "s/\(plane[0-5]\)/\1_HV${HV}/g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
