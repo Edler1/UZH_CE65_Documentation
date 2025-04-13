@@ -318,7 +318,7 @@ if [ "${geo_source}" == "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" ]; th
 
     # replace masks into chip subdir
     if [ "${testbeam}" == "DESY202311" ]; then
-        sed -i "s#/local/ITS3Utils/DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+        sed -i "s#/local/ITS3utils/DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
     else
         sed -i "s#\.\./\.\./\.\./DESY202311/masks#${its3_utils_path}/${testbeam}/masks/${chip}${tag:+/${tag}}#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
     fi
