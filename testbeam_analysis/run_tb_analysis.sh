@@ -88,6 +88,7 @@ tag_w_slash="${tag:+${tag}/}"
 ##########
 # Params #
 ##########
+#These params are overwritten by the params set in the "params" file.
 
 testbeam="SPS202404"
 chip="GAP225SQ"
@@ -131,6 +132,7 @@ spatial_cuts=(100 100 75 75 50 50 25 25)
 
 absolute_filepath=""
 
+useNoiseMask="False" # Mask pixels on the DUT to avoid misalignment due to noise. Default is False. Actual cut value used is set in ITS3utils/eudaq/analog_qa_ce65v2.py
 
 
 
@@ -198,6 +200,7 @@ fi
 its3_utils_path=`find . -type d -name "ITS3utils"`
 if [ -n "$its3_utils_path" ]; then
     its3_utils_path=`realpath $its3_utils_path`
+    echo "Using ITS3utils path: ${its3_utils_path}"
 else 
     echo "Cannot find dir \"ITS3utils\". Please make sure it is visible from within \"`pwd`\"."
     exit
@@ -312,6 +315,7 @@ fi
 #################
 # copy file from prototype
 cp ${geo_source} "geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo"
+sleep 5 # wait for file to be copied
 
 # If geo_source is default, then we must alter it. Otherwise it is assumed to be correct.
 if [ "${geo_source}" == "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" ]; then
@@ -337,6 +341,11 @@ if [ "${geo_source}" == "geometry/${testbeam_alphabetic}-GAP18SQ_HV10.geo" ]; th
     # Note that here we are actually keeping the old noisemap file
     sed -i "s#\.\./qa/DESY-GAP18SQ_HV10-noisemap\.root#${its3_utils_path}/${testbeam}/qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap.root#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
 
+    if [ "$useNoiseMask" = "True" ]; then
+        sed -i "s#\.\./qa/DESY-GAP18SQ_HV10-noisemap_mask\.txt#${its3_utils_path}/${testbeam}/qa/${chip}/${testbeam_alphabetic}-${chip}_HV${HV}-noisemap_mask.txt#g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+    else
+        sed -i "s#\.\./qa/DESY-GAP18SQ_HV10-noisemap_mask\.txt##g" geometry/${chip}/${tag_w_slash}${testbeam_alphabetic}-${chip}_HV${HV}.geo
+    fi
 fi
 
 
@@ -348,6 +357,7 @@ fi
 ############################
 # copy file from prototype
 cp ${prealign_source} "config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+sleep 5 # wait for file to be copied
 
 
 # update detectors_file(s) file name
@@ -378,6 +388,7 @@ fi
 #########################
 # copy file from prototype
 cp ${align_source} "config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+sleep 5 # wait for file to be copied
 
 # update detectors_file(s) file name
 # sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -412,6 +423,7 @@ sed -i "s/momentum=4GeV/momentum=${momentum}GeV/g" config/${chip}/${tag_w_slash}
 ############################
 # copy file from prototype
 cp ${prealign_dut_source} "config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+sleep 5 # wait for file to be copied
 
 # update detectors_file(s) file name
 # sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -456,6 +468,7 @@ sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/${ta
 #########################
 # copy file from prototype
 cp ${align_dut_source} "config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+sleep 5 # wait for file to be copied
 
 # update detectors_file(s) file name
 # sed -i "s/geometry\/DESY-GAP18SQ_HV10/..\/..\/..\/ament_tests\/geometry\/${chip}\/${tag}\/${testbeam_alphabetic}-${chip}_HV${HV}/g" config/${chip}/${tag}/align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -504,6 +517,7 @@ sed -i "s/^method=cluster.*$/method = ${method_alignment}/g" config/${chip}/${ta
 #########################
 # copy file from prototype
 cp ${analysis_source} "config/${chip}/${tag_w_slash}analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf"
+sleep 5 # wait for file to be copied
 
 # update firstly histogram name
 # sed -i "s/analysis_DESY-GAP18SQ_HV10_482100624_231128100629_seedthr200_nbh50_snr3_cluster\.root/${its3_utils_path}\/${testbeam}\/output\/${chip}\/${tag}\/analysis_${testbeam_alphabetic}-${chip}_${run_number_beam}_seedthr${seedthr_analysis}_nbh${nbh_analysis}_snr${snr_seed_analysis}_${method_analysis}.root/g" config/${chip}/${tag}/analysis_${testbeam_alphabetic}-${chip}_HV${HV}.conf
@@ -595,6 +609,7 @@ if ! $flag_analysis; then
     i=1
     while [ $i -le ${niter_prealign_tel} ]; do 
         cp config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sleep 5 # wait for file to be copied
         sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}prealign_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         if [ ${i} -gt 1 ]; then 
@@ -623,6 +638,7 @@ if ! $flag_analysis; then
     fi
     while [ $i -le ${niter_align_tel} ]; do 
         cp config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sleep 5 # wait for file to be copied
         sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}align_tel_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         # Iteratively decrease spatial_cut if spatial_cut_iterations variable set to true
@@ -651,6 +667,7 @@ if ! $flag_analysis; then
     i=1
     while [ $i -le ${niter_prealign_dut} ]; do 
         cp config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
+        sleep 5 # wait for file to be copied
         sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}prealign_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         if [ ${i} -gt 1 ]; then 
@@ -677,8 +694,7 @@ if ! $flag_analysis; then
     fi
     while [ $i -le ${niter_align_dut} ]; do 
         cp config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}.conf config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
-        
-
+        sleep 5 # wait for file to be copied
 
         sed -i "s#detectors_file_updated = \(.*\)\.conf#detectors_file_updated = \1_iter${i}.conf#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
         sed -i "s#histogram_file\(.*\)\.root#histogram_file\1_iter${i}.root#g" config/${chip}/${tag_w_slash}align_dut_${testbeam_alphabetic}-${chip}_HV${HV}_iter${i}.conf
