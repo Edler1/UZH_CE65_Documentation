@@ -11,7 +11,7 @@
 
 ## Lab Measurements 
 ### Hardware Setup
-![Alt text](images/setup.jpg)
+![Alt text](images/setup_labelled.png)
 
 The test setup consists of fundamentally three parts: the FPGA, the proxy board, and the carrier board (which houses the CE65 chip itself), as depicted in Figure INSERT REF. The FPGA board (name this properly...) must be connected via a USB interface to the computer which will act the bus for data transfer. The FPGA board is powered by the large green connector adjacent to the FPGA which is connected to the power supply. The FPGA board also houses the connectors to the SUB and PWELL, which are typically grounded. The HV_RESET connector is situated on the proxy board and provides the bias for the collection node (though only for the AC-coupled submatrix). Finally the carrier board sits beneath the Fe-55 source and should be handled with care. 
 A summary of typical parameters for the different connectors is:
@@ -59,6 +59,7 @@ The output of `histo_1d_root_dev.py` is a .pdf file in a directory `~/CE65/ce65_
 
 
 ### Testbeam Analysis
+See the [Testbeam Analysis Docs](./testbeam_analysis/README.md)
 
 
 ### Miscellaneous
@@ -67,7 +68,7 @@ The output of `histo_1d_root_dev.py` is a .pdf file in a directory `~/CE65/ce65_
 paths = ~/CE65/ce_65_v2
 paths = ~/CE65/ce-65-daq-software-uzh-edits
 
-
+<!--
 
 #### Thresholds
 #### Chiller and Temperature Control
@@ -79,3 +80,5 @@ paths = ~/CE65/ce-65-daq-software-uzh-edits
 
 #### Could also explain somewhat what the output histograms of the analysis step are. That is somewhat non-trivial. 
 #### Could also explain somewhere what the data actually is and what precisely we mean by "signal". Need these things for thesis anyway. Could maybe make a "details" folder.
+-->
+
