@@ -300,7 +300,7 @@ y_start = ax[1].get_ylim()[0] + 0.25  # Add a bit of padding
 
 if pitch == 22.5:
     # Add the patches and annotations at the new coordinates
-    ax[1].add_patch(pat.Rectangle((x_start, y_start), 6.7*2.25, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
+    ax[1].add_patch(pat.Rectangle((x_start, y_start), 7.0*2.25, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 0.5*2.25, y_start + 0.4), 1*2.25, 1, color=c[0], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 1.5*2.25, y_start + 0.4), 1*2.25, 1, color=c[1], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 2.5*2.25, y_start + 0.4), 1*2.25, 1, color=c[2], alpha=0.3, zorder=9))
@@ -312,7 +312,7 @@ if pitch == 22.5:
     plt.annotate(xy=(x_start + 4*2.25, y_start + 0.9), text="Stat. error", verticalalignment="center", zorder=9, fontsize=font_size_tot_eff)
 if pitch == 20:
     # Add the patches and annotations at the new coordinates
-    ax[1].add_patch(pat.Rectangle((x_start, y_start), 6.7*2, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
+    ax[1].add_patch(pat.Rectangle((x_start, y_start), 7.0*2, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 0.5*2, y_start + 0.4), 1*2, 1, color=c[0], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 1.5*2, y_start + 0.4), 1*2, 1, color=c[1], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 2.5*2, y_start + 0.4), 1*2, 1, color=c[2], alpha=0.3, zorder=9))
@@ -324,7 +324,7 @@ if pitch == 20:
     plt.annotate(xy=(x_start + 4*2, y_start + 0.9), text="Stat. error", verticalalignment="center", zorder=9, fontsize=font_size_tot_eff)
 if pitch == 15:
     # Add the patches and annotations at the new coordinates
-    ax[1].add_patch(pat.Rectangle((x_start, y_start), 6.7 * 15 / 10, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
+    ax[1].add_patch(pat.Rectangle((x_start, y_start), 7.0* 15 / 10, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 0.5 * 15 / 10, y_start + 0.4), 1 * 15 / 10, 1, color=c[0], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 1.5 * 15 / 10, y_start + 0.4), 1 * 15 / 10, 1, color=c[1], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start + 2.5 * 15 / 10, y_start + 0.4), 1 * 15 / 10, 1, color=c[2], alpha=0.3, zorder=9))
@@ -336,7 +336,7 @@ if pitch == 15:
     plt.annotate(xy=(x_start + 4 * 15 / 10, y_start + 0.9), text="Stat. error", verticalalignment="center", zorder=9, fontsize=font_size_tot_eff)
 if pitch == 10:
     # Add the patches and annotations at the new coordinates
-    ax[1].add_patch(pat.Rectangle((x_start-0.25, y_start), 6.7, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
+    ax[1].add_patch(pat.Rectangle((x_start-0.25, y_start), 7.0, 1.8, facecolor="white", edgecolor="grey", linewidth=0.5, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start-0.25 + 0.5, y_start + 0.4), 1, 1, color=c[0], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start-0.25 + 1.5, y_start + 0.4), 1, 1, color=c[1], alpha=0.3, zorder=9))
     ax[1].add_patch(pat.Rectangle((x_start-0.25 + 2.5, y_start + 0.4), 1, 1, color=c[2], alpha=0.3, zorder=9))

@@ -11,14 +11,14 @@ THR: 170
 HV: 10
 TOT_RES: 3.4
 
-# Cluster method
-CHIP_SETTINGS: "$\\bf{CE-65v2}$ (ER1)\nType: Standard\nPitch: 22.5$\\mathrm{\\mu m}$ \n$V_{sub}=V_{pwell}=0, T\ =\ 20°C$\n$I_{mat} = 3 \\mathrm{mA}, I_{col}=200 \\mathrm{\\mu A}, V_{offset}=1 \\mathrm{V}$\nAC amp.: $I_{pmos} = 100 \\mathrm{\\mu A}$, $HV=10 \\mathrm{V}$\nMethod: Cluster\nThreshold: 170\ e\u207B"
-FILE_PATH: "analysis_SPS-STD225SQ_merged_sedthr723_nbh723_snr3_cluster.root"
+# # Cluster method
+# CHIP_SETTINGS: "$\\bf{CE-65v2}$ (ER1)\nType: Standard\nPitch: 22.5$\\mathrm{\\mu m}$ \n$V_{sub}=V_{pwell}=0, T\ =\ 20°C$\n$I_{mat} = 3 \\mathrm{mA}, I_{col}=200 \\mathrm{\\mu A}, V_{offset}=1 \\mathrm{V}$\nAC amp.: $I_{pmos} = 100 \\mathrm{\\mu A}$, $HV=10 \\mathrm{V}$\nMethod: Cluster\nThreshold: 170\ e\u207B"
+# FILE_PATH: "analysis_SPS-STD225SQ_merged_sedthr723_nbh723_snr3_cluster.root"
 
 TRACKINGRESOLUTION: 2.2
 # NBINS: 23 # for eff
 NBINS: 22 # for res
 
-# # Window method
-# CHIP_SETTINGS: "$\\bf{CE-65v2}$ (ER1)\nType: Standard\nPitch: 22.5$\\mathrm{\\mu m}$ \n$V_{sub}=V_{pwell}=0, T\ =\ 20°C$\n$I_{mat} = 3 \\mathrm{mA}, I_{col}=200 \\mathrm{\\mu A}, V_{offset}=1 \\mathrm{V}$\nAC amp.: $I_{pmos} = 100 \\mathrm{\\mu A}$, $HV=10 \\mathrm{V}$\nMethod: Window\nThreshold: 170\ e\u207B"
-# FILE_PATH: "analysis_SPS-STD225SQ_merged_sedthr723_nbh723_snr3_window.root"
+# Window method
+CHIP_SETTINGS: "$\\bf{CE-65v2}$ (ER1)\nType: Standard\nPitch: 22.5$\\mathrm{\\mu m}$ \n$V_{sub}=V_{pwell}=0, T\ =\ 20°C$\n$I_{mat} = 3 \\mathrm{mA}, I_{col}=200 \\mathrm{\\mu A}, V_{offset}=1 \\mathrm{V}$\nAC amp.: $I_{pmos} = 100 \\mathrm{\\mu A}$, $HV=10 \\mathrm{V}$\nMethod: Window\nThreshold: 170\ e\u207B"
+FILE_PATH: "analysis_SPS-STD225SQ_merged_sedthr723_nbh723_snr3_window.root"

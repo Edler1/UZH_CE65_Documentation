@@ -59,102 +59,105 @@ def compute_position_resolution(residual_x_val, residual_x_err, residual_y_val, 
     return position_resolution_val, position_resolution_err
 
 
-########
-#PARAMS#
-########
+if __name__ == "__main__":
 
-working_dir = "/local/ITS3utils"
-chip = "GAP225SQ"
-
-if len(sys.argv)==2: chip = sys.argv[1]
-
-# These thresholds must match the e- thresholds at which the analysis was performed
-seed_thresholds = ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]
-
-# factor should be set to the conversion factor between ADU and e for the specific chip. Check google docs for full list of factors:
-# https://docs.google.com/document/d/19Fcl0ddjLbrOKS4Pklz0K1czCOLfNEMVHt0L1k96xvo/edit
-factor=0.23287
-
-
-# Convert seed thresholds into ADU 
-seed_thresholds = [str(int((float(seed_threshold)/factor)+0.5)) for seed_threshold in seed_thresholds]
-
-
-
-
-
-
-###########
-#EXECUTION#
-###########
-
-
-os.chdir(working_dir)
-
-# Here we find that file(s) that we want to loop over -> Basically a final step cause we should do this on remote server...
-print(os.getcwd())
-
-
-# This script is meant to be run remotely, with the output .txt files being copied over
-# ssh -o ServerAliveInterval=100 eploerer@mshort.iihe.ac.be
-
-file_list = []
-for threshold in seed_thresholds:
-    source_file = subprocess.run(['ls SPS202404/output/'+chip+'/analysis_SPS-'+chip+'_*_seedthr'+threshold+'_nbh'+threshold+'*_cluster.root'], shell=True, capture_output=True, text=True)
-    source_file = source_file.stdout.strip()
-    slicing_index = source_file.find("analysis") 
-    source_file = source_file[slicing_index:]
-    file_list.append(source_file)
-
-
-
-
-# Use numpy arrays here instead of lists, since they may need to be rearranged
-seed_th_array = np.array([])
-pos_res_array = np.array([])
-pos_res_err_array = np.array([])
-eff_array = np.array([])
-eff_err_array = np.array([])
-for file in file_list:
-    print('SPS202404/output/'+chip+'/'+file)
-
-    plotting_output = subprocess.run([working_dir+'/corry/plot_analog_ce65v2.py', '-f', 'SPS202404/output/'+chip+'/'+file], capture_output=True, text=True)
-    plotting_output = plotting_output.stdout
-
-    seed = re.search(r'seedthr(\d+)', file).group(1)
-    pos_res, pos_res_err = compute_position_resolution(*extract_residuals(plotting_output))
-
-    eff, eff_err = extract_efficiency(plotting_output)
-
-    seed_th_array = np.append(seed_th_array, seed)
-    pos_res_array = np.append(pos_res_array, str(pos_res))
-    pos_res_err_array = np.append(pos_res_err_array, str(pos_res_err))
-    eff_array = np.append(eff_array, str(eff))
-    eff_err_array = np.append(eff_err_array, str(eff_err))
-
-# Sort arrays in ascending order for plotting later
-sort_by_seed_indices = np.argsort(seed_th_array.astype(float))
-
-
-
-seed_th_array = (seed_th_array[sort_by_seed_indices].astype(float))*factor
-pos_res_array = pos_res_array[sort_by_seed_indices]
-pos_res_err_array = pos_res_err_array[sort_by_seed_indices]
-eff_array = eff_array[sort_by_seed_indices]
-eff_err_array = eff_err_array[sort_by_seed_indices]
-
-
-# SPS_STD225SQ_HV10_adc_res_err.txt
-out_dir = "SPS202404/output"
-fname_res = "SPS_"+chip+"_HV10_adc_res_err.txt"
-fname_eff = "SPS_"+chip+"_HV10_adc_eff_err.txt"
-
-with open(out_dir+"/"+fname_res, "w") as file:
-    for i in range(len(seed_th_array)):
-        file.write(str(seed_th_array[i])+" "+pos_res_array[i]+" "+pos_res_err_array[i]+"\n")
-
-with open(out_dir+"/"+fname_eff, "w") as file:
-    for i in range(len(seed_th_array)):
-        file.write(str(seed_th_array[i])+" "+eff_array[i]+" "+eff_err_array[i]+"\n")
+    ########
+    #PARAMS#
+    ########
+    
+    working_dir = "/local/ITS3utils"
+    chip = "GAP225SQ"
+    
+    if len(sys.argv)==2: chip = sys.argv[1]
+    
+    # These thresholds must match the e- thresholds at which the analysis was performed
+    seed_thresholds = ["70", "90", "110", "130", "170", "210", "250", "290", "330", "370"]
+    
+    # factor should be set to the conversion factor between ADU and e for the specific chip. Check google docs for full list of factors:
+    # https://docs.google.com/document/d/19Fcl0ddjLbrOKS4Pklz0K1czCOLfNEMVHt0L1k96xvo/edit
+    factor=0.23287
+    # factor=0.23528
+    
+    
+    # Convert seed thresholds into ADU 
+    seed_thresholds = [str(int((float(seed_threshold)/factor)+0.5)) for seed_threshold in seed_thresholds]
+    
+    
+    
+    
+    
+    
+    ###########
+    #EXECUTION#
+    ###########
+    
+    
+    os.chdir(working_dir)
+    
+    # Here we find that file(s) that we want to loop over -> Basically a final step cause we should do this on remote server...
+    print(os.getcwd())
+    
+    
+    # This script is meant to be run remotely, with the output .txt files being copied over
+    # ssh -o ServerAliveInterval=100 eploerer@mshort.iihe.ac.be
+    
+    file_list = []
+    for threshold in seed_thresholds:
+        source_file = subprocess.run(['ls SPS202404/output/'+chip+'/analysis_SPS-'+chip+'_*_seedthr'+threshold+'_nbh'+threshold+'*_cluster.root'], shell=True, capture_output=True, text=True)
+        source_file = source_file.stdout.strip()
+        slicing_index = source_file.find("analysis") 
+        source_file = source_file[slicing_index:]
+        file_list.append(source_file)
+    
+    
+    
+    
+    # Use numpy arrays here instead of lists, since they may need to be rearranged
+    seed_th_array = np.array([])
+    pos_res_array = np.array([])
+    pos_res_err_array = np.array([])
+    eff_array = np.array([])
+    eff_err_array = np.array([])
+    for file in file_list:
+        print('SPS202404/output/'+chip+'/'+file)
+    
+        plotting_output = subprocess.run([working_dir+'/corry/plot_analog_ce65v2.py', '-f', 'SPS202404/output/'+chip+'/'+file], capture_output=True, text=True)
+        plotting_output = plotting_output.stdout
+    
+        seed = re.search(r'seedthr(\d+)', file).group(1)
+        pos_res, pos_res_err = compute_position_resolution(*extract_residuals(plotting_output))
+    
+        eff, eff_err = extract_efficiency(plotting_output)
+    
+        seed_th_array = np.append(seed_th_array, seed)
+        pos_res_array = np.append(pos_res_array, str(pos_res))
+        pos_res_err_array = np.append(pos_res_err_array, str(pos_res_err))
+        eff_array = np.append(eff_array, str(eff))
+        eff_err_array = np.append(eff_err_array, str(eff_err))
+    
+    # Sort arrays in ascending order for plotting later
+    sort_by_seed_indices = np.argsort(seed_th_array.astype(float))
+    
+    
+    
+    seed_th_array = (seed_th_array[sort_by_seed_indices].astype(float))*factor
+    pos_res_array = pos_res_array[sort_by_seed_indices]
+    pos_res_err_array = pos_res_err_array[sort_by_seed_indices]
+    eff_array = eff_array[sort_by_seed_indices]
+    eff_err_array = eff_err_array[sort_by_seed_indices]
+    
+    
+    # SPS_STD225SQ_HV10_adc_res_err.txt
+    out_dir = "SPS202404/output"
+    fname_res = "SPS_"+chip+"_HV10_adc_res_err.txt"
+    fname_eff = "SPS_"+chip+"_HV10_adc_eff_err.txt"
+    
+    with open(out_dir+"/"+fname_res, "w") as file:
+        for i in range(len(seed_th_array)):
+            file.write(str(seed_th_array[i])+" "+pos_res_array[i]+" "+pos_res_err_array[i]+"\n")
+    
+    with open(out_dir+"/"+fname_eff, "w") as file:
+        for i in range(len(seed_th_array)):
+            file.write(str(seed_th_array[i])+" "+eff_array[i]+" "+eff_err_array[i]+"\n")
 
 
