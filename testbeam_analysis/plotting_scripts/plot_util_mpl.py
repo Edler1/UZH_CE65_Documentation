@@ -23,11 +23,11 @@ def draw_configuration(ax, x=1.05, y=0.75, font_size=12, spacing=0.055, sub='AC'
     elif sub == 'SF':
         ax.annotate(f'SF: I$_{{nmos}}$ = {sf_inmos} $\mu$A, V$_{{reset}}$ = {sf_vreset} V',xy=(x, y-2*spacing), xycoords='axes fraction', fontsize=font_size, color='black')
 
-def draw_preliminary(ax, x=0.05, y=0.12, font_size=12, spacing=0.05, hspacing=0.05, beam="SPS"):
+def draw_preliminary(ax, x=0.05, y=0.12, font_size=12, spacing=0.05, hspacing=0.05, beam="SPS", status="preliminary"):
     if beam=="SPS":
-        ax.annotate(r'$\mathbf{ALICE}$ $\mathbf{ITS3}$-$\mathbf{WP3}$ beam test $\mathit{preliminary}$', xy=(x, y), xycoords='axes fraction', fontsize=15, color='black')
+        ax.annotate(r'$\mathbf{ALICE}$ $\mathbf{ITS3}$-$\mathbf{WP3}$ beam test $\mathit{'+status+'}$', xy=(x, y), xycoords='axes fraction', fontsize=15, color='black')
         ax.annotate('@CERN-SPS April 2024, 120 GeV/c hadrons', xy=(x+hspacing, y-spacing), xycoords='axes fraction', fontsize=13, color='black')
     elif beam=="lab":
-        ax.annotate(r'$\mathbf{ALICE}$ $\mathbf{ITS3}$-$\mathbf{WP3}$ $\mathit{preliminary}$', xy=(x, y), xycoords='axes fraction', fontsize=15, color='black')
+        ax.annotate(r'$\mathbf{ALICE}$ $\mathbf{ITS3}$-$\mathbf{WP3}$ $\mathit{'+status+'}$', xy=(x, y), xycoords='axes fraction', fontsize=15, color='black')
         ax.annotate('$^{55}$Fe Source Measurement', xy=(x+hspacing, y-spacing), xycoords='axes fraction', fontsize=13, color='black')
-    ax.annotate(datetime.datetime.now().strftime("Plotted on %d %b %Y"), xy=(x+2*hspacing, y-2*spacing), xycoords='axes fraction', fontsize=13, color='black')
+    # ax.annotate(datetime.datetime.now().strftime("Plotted on %d %b %Y"), xy=(x+2*hspacing, y-2*spacing), xycoords='axes fraction', fontsize=13, color='black')

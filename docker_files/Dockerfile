@@ -1,6 +1,6 @@
 #$#FROM ubuntu:latest
 FROM rootproject/root:6.26.10-ubuntu22.04
-LABEL maintainer = "Miljenko Suljic <miljenko.suljic@cern.ch>"
+# LABEL maintainer = "Miljenko Suljic <miljenko.suljic@cern.ch>"
 
 # Install basic build requirements
 ARG DEBIAN_FRONTEND=noninteractive
@@ -24,7 +24,7 @@ RUN pip3 install tqdm
 
 # EUDAQ2
 ENV EUDAQ2PATH="/opt/eudaq2"
-COPY debug_builds/eudaq2 ${EUDAQ2PATH}
+COPY docker_builds/eudaq2 ${EUDAQ2PATH}
 RUN mkdir -p ${EUDAQ2PATH}/build && \
     cd ${EUDAQ2PATH}/build && \
     cmake -DEUDAQ_BUILD_STDEVENT_MONITOR=ON \
@@ -35,8 +35,8 @@ RUN mkdir -p ${EUDAQ2PATH}/build && \
     make install
 
 # Corryvreckan
-ENV CORRYPATH=/opt/corryvreckan
-COPY debug_builds/corryvreckan ${CORRYPATH}
+ENV CORRYPATH="/opt/corryvreckan"
+COPY docker_builds/corryvreckan ${CORRYPATH}
 RUN mkdir -p ${CORRYPATH}/build && \
     cd ${CORRYPATH}/build && \
     cmake -DBUILD_EventLoaderEUDAQ2=ON \
