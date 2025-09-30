@@ -46,7 +46,7 @@ json_files = {"GAP15SQ" : "data/GAP15SQ_PCB19_0V_10V_15122023.json",
         "STD225SQ" : "data/STD225SQ_PCB18_0V_10V_13122023.json"}
 
 # .txt directory filepath (empty by default as .txt files are assumed to be in pwd)
-filepath = "data"
+filepath = "../ITS3utils/SPS202404/output"
 filepath = filepath if (filepath.endswith("/") or not bool(filepath)) else filepath+"/"
 
 # Load the Okabe Ito color palette from JSON
@@ -200,5 +200,5 @@ else:
 # Adjust layout and save/show plot
 # plt.tight_layout()
 ax1.set_position([0.1, 0.14, 0.57, 0.81])
-plt.savefig(f"styled_resolution_plot_{process}.pdf")  # Save the plot as an image
+plt.savefig(f"styled_resolution_plot_{process}_{matrix_arrangement}.pdf")  # Save the plot as an image
 plt.show()  # Display the plot

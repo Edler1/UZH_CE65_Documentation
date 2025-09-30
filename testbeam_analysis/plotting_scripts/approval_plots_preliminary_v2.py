@@ -16,6 +16,9 @@ import re
 # Used for --approval_debug and --approval
 database = {
   'testbeam': 'SPS202404',
+  # 'status': 'work in progress',
+  'status': 'preliminary',
+  # 'testbeam': 'DESY202311',
   # 'pitches': ['225', '15', '18'],
   'pitches': ['225', '15'],
   # 'pitches': ['18', '15'],
@@ -183,20 +186,24 @@ for chips in database['variant']:
   line_vars[chips] = next(plot_util.LINE)
 
 def plot_alice(painter : plot_util.Painter, x1 = 0.02, y1 = 0.03, x2 = 0.47, y2 = 0.17,
- size=0.04, pos='lt', test='beam'):
+ size=0.04, pos='lt', test='SPS202404', status='preliminary'):
   """
   """
   if pos == 'rb' or pos == 'rt':
     align=32
   else:
     align=11
-  if test == 'beam':
+  if test == 'SPS202404':
     label = painter.new_obj(plot_util.InitALICELabel(x1, y1, x2, y2, 
-      align=12, type='#bf{ALICE ITS3-WP3} beam test #it{preliminary}', size=size, pos=pos))
+      align=12, type='#bf{ALICE ITS3-WP3} beam test #it{'+status+'}', size=size, pos=pos))
     painter.add_text(label, '@CERN-SPS April 2024, 120 GeV/#it{c} hadrons', size=size*0.75, align=align)
+  elif test == 'DESY202311':
+    label = painter.new_obj(plot_util.InitALICELabel(x1, y1, x2, y2, 
+      align=12, type='#bf{ALICE ITS3-WP3} beam test #it{work in progress}', size=size, pos=pos))
+    painter.add_text(label, '@DESY November 2023, 4 GeV/#it{c} electrons', size=size*0.75, align=align)
   else:
     label = painter.new_obj(plot_util.InitALICELabel(x1, y1, x2, y2, 
-      align=12, type='#bf{ALICE ITS3-WP3} #it{preliminary}', size=size, pos=pos))
+      align=12, type='#bf{ALICE ITS3-WP3} #it{'+status+'}', size=size, pos=pos))
   painter.add_text(label, datetime.datetime.now().strftime("Plotted on %d %b %Y"), size=size*0.75, align=align)
   label.Draw('same')
   return label
@@ -265,7 +272,7 @@ def plot_noise(painter : plot_util.Painter, variant='GAP225SQ', pitch='225', mod
   # Legend
   lgd.Draw('same')
   # Text
-  plot_alice(painter,test='lab')
+  plot_alice(painter,test='lab',status=database['status'])
   # ptxt = painter.draw_text(0.65, 0.65, 0.95, 0.92)
 
   # Text info
@@ -399,7 +406,7 @@ def plot_cluster_charge(painter : plot_util.Painter, optNorm=False, optSeed=Fals
   painter.draw_text(0.62, 0.45, 0.90, 0.48, 'Fitting by Landau-Gaussian function', size=0.03, font=42).Draw('same')
   lgd.SetTextSize(0.035)
   lgd.Draw('same')
-  plot_alice(painter)
+  plot_alice(painter, test=database['testbeam'],status=database['status'])
 
   # ptxt = painter.draw_text(0.62, 0.65, 0.95, 0.93)
   ptxt = painter.draw_text(0.57, 0.64, 0.90, 0.91)
@@ -490,7 +497,7 @@ def plot_cluster_shape(painter : plot_util.Painter, pitch='225', mode="approval_
     painter.add_text(pTxtClustering, f'Seed charge > 100 e^{{-}}, SNR > 3', size=0.03)
     pTxtClustering.Draw('same')
     # Label
-    plot_alice(painter, 0.08, 0.03, 0.40, 0.15, size=0.034, pos='rb')
+    plot_alice(painter, 0.08, 0.03, 0.40, 0.15, size=0.034, pos='rb', test=database['testbeam'],status=database['status'])
     # Line at Y/Rn=1
     painter.canvas.Update()
     line = painter.new_obj(ROOT.TLine(ROOT.gPad.GetUxmin(), 1., ROOT.gPad.GetUxmax(), 1.0))
@@ -506,6 +513,12 @@ def plot_cluster_shape(painter : plot_util.Painter, pitch='225', mode="approval_
     chip_setup = chip_vars['setup']
     draw_configuration(painter, ptxt)
     ptxt.Draw('same')
+
+    # Print average first bin
+    first_bin = 1  # Bin 1 corresponds to x = 1 (1 pixel)
+    avg_rn = hPx.GetBinContent(first_bin)
+    bin_center = hPx.GetXaxis().GetBinCenter(first_bin)
+    print(f"Average R_n for bin {first_bin} (x = {bin_center}): {avg_rn}")
 
     # Output
     painter.save_obj(hRatio)
@@ -580,7 +593,7 @@ def plot_tracking_residual(painter : plot_util.Painter, axis='X', mode="approval
   painter.draw_text(0.57, 0.59, 0.90, 0.62, 'Fitting by Gaussian function', size=0.03, font=42).Draw('same')
   lgd.SetTextSize(0.035)
   lgd.Draw('same')
-  plot_alice(painter)
+  plot_alice(painter, test=database['testbeam'],status=database['status'])
 
   # ptxt = painter.draw_text(0.62, 0.65, 0.95, 0.93)
   ptxt = painter.draw_text(0.57, 0.64, 0.90, 0.91)
